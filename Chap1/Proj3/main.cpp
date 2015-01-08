@@ -14,16 +14,18 @@ int main(int argc, char** argv)
     int quarters = 0, dimes = 0, nickels = 0;
     float value = 0.0f;
     
-    cout << "How much change is in your pocket?"
+    cout << "How much change is in your pocket?" << endl;
     
-    cout << "Please enter two whole numbers, and the press enter: ";
-    cin >> a;
+    cout << "Enter the numbers of quarters: ";
+    cin >> quarters;
+    cout << "Enter the number of dimes: ";
+    cin >> dimes;
+    cout << "Enter the number of nickels: ";
+    cin >> nickels;
     
-    sum = a + b;
-    product = a * b;
+    value = 0.25f * quarters + 0.1f * dimes + 0.05f * nickels;
     
-    cout << "The sum of "  << a << " and " << b << " is " << sum << endl;
-    cout << "The product of " << a << " and " << b << " is " << product << endl;
+    cout << "The values of your coins are "
     
     return 0;
 }
