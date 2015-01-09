@@ -1,0 +1,3 @@
+cout << fixed << setprecision(2) << showpoint;
+cout << setw(8) << var1;
+cout << setw(8) << var2;
