@@ -1,4 +1,4 @@
-git config --file ".git\config"
+git config --file "config_user_only"
 rem git config --global user.email "aeast@student.rcc.edu"
 rem git config --global user.name "Andrew East"
 
