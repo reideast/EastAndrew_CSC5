@@ -1,7 +1,7 @@
 /* 
  * File:   main.cpp
  * Author: Andrew East
- * Purpose: To add and multiply two integers
+ * Purpose: To calculate how much change is worth.
  *
  * Created on January 8, 2015, 1:48 PM
  */
@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     
     value = 0.25f * quarters + 0.1f * dimes + 0.05f * nickels;
     
-    cout << "The values of your coins are "
+    cout << "The values of your coins is $" << value << "." << endl;
     
     return 0;
 }
