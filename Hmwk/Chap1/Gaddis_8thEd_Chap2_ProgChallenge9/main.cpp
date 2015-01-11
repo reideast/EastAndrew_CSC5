@@ -1,7 +1,7 @@
 /* 
    File:   main.cpp
    Author: Andrew Reid East
-	 Class: CSC-5 40718
+   Class: CSC-5 40718
    Created on January 10, 2015, 1:45 PM
    Purpose: Display the data type sizes of the machine running this program
  */
