@@ -62,7 +62,6 @@ int main(int argc, char** argv)
       cout << "  Dependent Health Insurance: $" << dependentHealthCost << endl;
     cout << "Net pay: $" << payNet << endl << endl;
 
-    //ask user to repeat
     cout << "Do you want to calculate another employee? (Y/N) ";
     cin >> again;
     
