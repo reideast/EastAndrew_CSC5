@@ -1,0 +1,39 @@
+Rocket Launch
+guess how much thrust you need to launch a rocket up out of the atmosphere
+-and how long the burn is
+challenge because more thrust realistically adds more fuel weight (there's a formula for this, right?)
+three difficulty levels: just the rocket, small payload, and heavy payload
+
+Inputs:
+thrust
+-constant vs. variable??
+time of thrust in seconds
+-> calculate fuel weight
+    -changes over time as fuel is burnt up? (formula?)
+maybe change type of engine? liquid, solid, boosters, sci-fi (ion, nuclear (Fallout reference))
+
+Calculation:
+Height as function of time & thrust & fuel
+
+Draw Screen:
+how to CLS a C++ terminal?? to make frames
+-write 30+ endl?
+how many FPS can I do?
+
+DrawScreen(x, y, time, height, fuel)
+- puts the "rocket" ASCII character at x,y on terminal screen
+- writes the data
+- called once per frame
+
+Height: 1000 ft.            |----------------------------------------------|
+Speed: 500 ft/sec           |                                              |
+Fuel Remains: 300 gal.      |                                              |
+Time: 20 sec.               |                                              |
+                            |                                              |
+                            |                      ^                       |
+                            |                      |                       |
+                            |                                              |
+                            |                                              |
+                            |                                              |
+                            |                     |-|                      |
+                            |----------------------------------------------|
