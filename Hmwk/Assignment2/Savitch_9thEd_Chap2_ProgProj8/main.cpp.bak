@@ -1,0 +1,53 @@
+/* 
+    File:   main.cpp
+    Author: Andrew Reid East
+    Class: CSC-5 40718
+    Created on January 12, 2015, 9:49 PM
+    Purpose: Calculate the number of payments required and the interest paid on a loan
+ */
+
+//System Libraries
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+//User Libraries
+//Global Constants
+//Function Prototypes
+
+//Execution Begins Here
+int main(int argc, char** argv)
+{
+  //set output formatting
+  cout << fixed << setprecision(2) << showpoint;
+  
+  //set up parameters
+  float loan = 1000.0f, interestMonthly = .015f, payment = 50.0f;
+  cout << "The loan is for $" << loan << " at " << interestMonthly * 100 * 12 << "% yearly interest, and you will pay $" << payment << " per month." << endl;
+  
+  //working and total variables
+  float totalPaidInterest = 0.0f;
+  float interestThisMonth = 0.0f;
+  int countMonths = 0;
+  
+  interestThisMonth = loan * interestMonthly; //interest accrued over the last month
+  loan += interestThisMonth;
+  while (loan >= payment)
+  {
+    //this month
+    ++countMonths;
+    totalPaidInterest += interestThisMonth; //record the amount of interest paid
+    loan -= payment;
+
+    cout << "DEBUG: month#" << countMonths << " remaining debt: $" << loan << " interestThisMonth: $" << interestThisMonth << " principle reduced by: $" << payment - interestThisMonth << endl;
+    
+    //next month
+    interestThisMonth = loan * interestMonthly; //interest accrued over the last month
+    loan += interestThisMonth;
+
+  }
+  
+  cout << "The loan took " << countMonths << " months to pay off, and the interest paid over the life of the loan was $" << totalPaidInterest << "." << endl;
+  
+  return 0;
+}
