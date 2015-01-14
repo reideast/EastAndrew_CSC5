@@ -3,7 +3,10 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on January 13, 2015, 6:35 PM
-    Purpose: converted a miles per hour to "pace" - how long it takes to go 1 mile in (integer) minutes and (float) seconds
+    Purpose: demonstrate a truth table of two boolean values.
+    Also, do a swap using XOR.
+    Also, do functions by reference.
+    Also, convert an integer into a string of bits...for some reason.
  */
 
 //System Libraries
