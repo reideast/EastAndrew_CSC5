@@ -1,24 +1,31 @@
 /* 
- * File:   main.cpp
- * Author: rcc
- *
- * Created on January 13, 2015, 6:35 PM
+    File:   main.cpp
+    Author: Andrew Reid East
+    Class: CSC-5 40718
+    Created on January 13, 2015, 6:35 PM
+    Purpose: converted a miles per hour to "pace" - how long it takes to go 1 mile in (integer) minutes and (float) seconds
  */
 
- //sytem lib
+//System Libraries
 #include <iostream>
+#include <string>
 using namespace std;
 
-//global constants
+//User Libraries
+//Global Constants
 
-//user function definitions
+//Function Prototypes
 void printRow(bool x, bool y); //prints a row of the truth table
 void printTF(bool expr); //prints 'T' or 'F' with exactly 7 spaces after
 
-void swapTemp(int* a, int* b);
-void swapBitwise(int* a, int* b);
-void swapBitwise(char* a, char* b);
+void swapTemp(int* a, int* b); //swaps two integers by reference (uses temporary variable)
+void swapBitwise(int* a, int* b); //swaps two integers by reference (uses bitwise XOR)
+void swapBitwise(char* a, char* b); //testing function overloading??
 
+void printBits(int value, unsigned int precision); //put bits of value to cout, show precision binary digits
+string getBits(int value, unsigned int precision); //return a String of binary digits representing value
+
+//Execution Begins Here
 int main(int argc, char** argv)
 {  
   //header (each column is 8 char, 13 columns)
@@ -28,6 +35,7 @@ int main(int argc, char** argv)
   printRow(true, false);
   printRow(false, true);
   printRow(false, false);
+  cout << endl;
   
   cout << "Test temp variable swap:" << endl;
   int a = 2, b = 3;
@@ -50,7 +58,63 @@ int main(int argc, char** argv)
   cout << "c = " << static_cast<int>(c) << ", d = " << static_cast<int>(d) << endl;
   cout << endl;
   
+  printBits(2, 8);
+  cout << endl;
+  printBits(2, 4);
+  cout << endl;
+  printBits(2, 32);
+  cout << endl;
+  printBits(3, 8);
+  cout << endl;
+  printBits(19, 8);
+  cout << endl;
+  printBits(19, 4);
+  cout << endl;
+  cout << endl;
+  
+  int test = 2;
+  cout << "In binary, " << test << " = " << getBits(test, 8) << endl;
+  cout << "In binary, " << test << " = " << getBits(test, 4) << endl;
+  cout << "In binary, " << test << " = " << getBits(test, 32) << endl;
+  test = 3;
+  cout << "In binary, " << test << " = " << getBits(test, 8) << endl;
+  test = 19;
+  cout << "In binary, " << test << " = " << getBits(test, 8) << endl;
+  cout << "In binary, " << test << " = " << getBits(test, 4) << endl;
+  cout << endl;
+  
   return 0;
+}
+
+string getBits(int value, unsigned int precision)
+{
+  string output;
+  
+  int mask = 1 << (precision - 1); // 00000001 shifted left to the largest bit requested by precision, ex for 8 = 10000000
+  for (int i = 0; i < precision; ++i) //loop once for each bit requested by precision
+  {
+    //add a space every nibble
+    if (!(i % 4) && i) output += ' ';//every four lines: (i % 4) == 0 equiv to !(i % 4), not the first bit: i != 0 equiv to i
+    
+    output += ((value & mask) ? '1' : '0'); //if bitwise AND with the mask has a value (ie. True), then there is a bit in that position, so output 1
+    mask = mask >> 1; //shift right 1. ex: 10000000 -> 01000000, and then 00100000 -> 0001000
+  }
+  
+  return output;
+}
+
+//referenced: http://stackoverflow.com/questions/2686542/converting-integer-to-a-bit-representation
+void printBits(int value, unsigned int precision)
+{
+  int mask = 1 << (precision - 1); // 00000001 shifted left to the largest bit requested by precision, ex for 8 = 10000000
+  for (int i = 0; i < precision; ++i) //loop once for each bit requested by precision
+  {
+    //add a space every nibble
+    if (!(i % 4) && i) cout << ' ';//every four lines: (i % 4) == 0 equiv to !(i % 4), not the first bit: i != 0 equiv to i
+    
+    cout << ((value & mask) ? '1' : '0'); //if bitwise AND with the mask has a value (ie. True), then there is a bit in that position, so output 1
+    mask = mask >> 1; //shift right 1. ex: 10000000 -> 01000000, and then 00100000 -> 0001000
+  }
 }
 
 void swapTemp(int* a, int* b)
