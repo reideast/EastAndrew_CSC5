@@ -30,9 +30,10 @@ int main(int argc, char** argv)
   //get user input
   cout << "Please enter the lower temperature in Celsius (whole numbers only): ";
   cin >> tempLow;
-  cout << "Please enter the higher temperature: ";
+  cout << "Please enter the higher temperature in Celsius: ";
   cin >> tempHigh;
   
+  //test for improper input that will cause the loop to be infinite
   if (tempLow > tempHigh)
   {
     cout << "The second temperature you entered is not higher." << endl;
