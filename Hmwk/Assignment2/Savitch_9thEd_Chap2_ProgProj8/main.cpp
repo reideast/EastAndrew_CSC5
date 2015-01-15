@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     totalPaidInterest += interestThisMonth; //record the amount of interest accrued this month
     loan -= payment; //pay down interest and principle
     
-    cout << "DEBUG: month#" << countMonths << " remaining debt: $" << loan << " interestThisMonth: $" << interestThisMonth << " principle reduced by: $" << payment - interestThisMonth << endl;
+    //cout << "DEBUG: month#" << countMonths << " remaining debt: $" << loan << " interestThisMonth: $" << interestThisMonth << " principle reduced by: $" << payment - interestThisMonth << endl;
     
     //next month
     interestThisMonth = loan * interestMonthly; //interest accrued over the last month
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
   ++countMonths;
   float lastMonthPayment = loan;
   totalPaidInterest += interestThisMonth; //record the amount of interest accrued this month
-  cout << "DEBUG: month#" << countMonths << " final payment: $" << lastMonthPayment << " interestThisMonth: $" << interestThisMonth << " principle reduced by: $" << loan - interestThisMonth << endl;
+  //cout << "DEBUG: month#" << countMonths << " final payment: $" << lastMonthPayment << " interestThisMonth: $" << interestThisMonth << " principle reduced by: $" << loan - interestThisMonth << endl;
   
   cout << "The loan took " << countMonths << " months to pay off, and the interest paid over the life of the loan was $" << totalPaidInterest << "." << endl;
   
