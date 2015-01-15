@@ -23,7 +23,7 @@ int main(int argc, char** argv)
 {
   float displacement = 0.0f, length = 0.0f, tempDelta = 0.0f, alpha = 0.0f;
   
-  //an addition to problem: a menu to choose one of the provided coefficients of expansion, or option to enter your own
+  //added to problem: a menu to choose one of the provided coefficients of expansion, or option to enter your own
   int choice = 5;
   cout << "Please choose the number of a material, or the final option to input your own coefficient for linear expansion:" << endl;
   cout << "(1) Aluminum: 2.31 x 10^-5" << endl;
@@ -36,23 +36,36 @@ int main(int argc, char** argv)
   switch (choice)
   {
     case 1:
-      cout << "1";
+      alpha = ALPHA_AL;
       break;
     case 2:
-      cout << "2";
+      alpha = ALPHA_CU;
       break;
     case 3:
-      cout << "3";
+      alpha = ALPHA_GLASS;
       break;
     case 4:
-      cout << "4";
+      alpha = ALPHA_STEEL;
       break;
     case 5:
-      cout << "5";
+      cout << endl << "Enter the coefficient for linear expansion (can use scientific notation, ex: 1.23e-4): ";
+      cin >> alpha;
       break;
     default:
       cout << "default";
   }
+  
+  //get the rest of the user input
+  cout << "Enter the initial length of the material (in meters): ";
+  cin >> length;
+  cout << "Enter the change in temperature (in degrees Celsius): ";
+  cin >> tempDelta;
+  
+  //calculate linear displacement
+  displacement = alpha * length * tempDelta;
+  
+  //output results
+  cout << "The material will " << ((displacement >= 0) ? "expand" : "contract") << " by " << ((displacement >= 0) ? displacement : -displacement) << " meters." << endl;
   
   return 0;
 }

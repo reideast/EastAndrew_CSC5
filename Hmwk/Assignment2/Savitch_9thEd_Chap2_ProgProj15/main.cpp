@@ -48,14 +48,25 @@ int main(int argc, char** argv)
       alpha = ALPHA_STEEL;
       break;
     case 5:
-      cout << endl << "Input the coefficient for linear expansion (can use scientific notation, ex: 1.23e-4): "
+      cout << endl << "Enter the coefficient for linear expansion (can use scientific notation, ex: 1.23e-4): ";
       cin >> alpha;
       break;
     default:
       cout << "default";
   }
+  cout << endl;
   
+  //get the rest of the user input
+  cout << "Enter the initial length of the material (in meters): ";
+  cin >> length;
+  cout << "Enter the change in temperature (in degrees Celsius): ";
+  cin >> tempDelta;
   
+  //calculate linear displacement
+  displacement = alpha * length * tempDelta;
+  
+  //output results
+  cout << "The material will " << ((displacement >= 0) ? "expand" : "contract") << " by " << ((displacement >= 0) ? displacement : -displacement) << " meters." << endl;
   
   return 0;
 }
