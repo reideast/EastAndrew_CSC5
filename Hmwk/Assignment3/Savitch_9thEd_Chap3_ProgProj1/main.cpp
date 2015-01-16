@@ -8,6 +8,7 @@
 
 //System Libraries
 #include <iostream>
+#include <iomanip>
 using namespace std;
 
 //User Libraries
@@ -17,27 +18,35 @@ using namespace std;
 //Execution Begins Here
 int main(int argc, char** argv)
 {
-  bool isUserFinished = false;
+  bool isUserFinished = false; //controls main loop
   char quit = 0;
-  bool isInputValid = false;
-  char dayChar1 = 0, dayChar2 = 0;
+  bool isInputValid = false; //controls individual input loops (ie, loop until input is right)
+  
+  char dayChar1 = 0, dayChar2 = 0; //user input two character date code
   enum Days {MON, TUE, WED, THU, FRI, SAT, SUN};
-  int day = MON;
-  int hour = 0, minute = 0;
-  float time = 0.0f;
-  char throwAwayTheColon;
-  int rate = 0;
+  int day = MON; //internal storage of day
+  
+  int hour = 0, minute = 0; //user input of the time of day
+  char throwAwayTheColon; //user input of a single character ':' that isn't used
+  float time = 0.0f; //internal storage with minutes converted to fractional hours
+  
+  int rate = 0; //internal storage of rate based on time of day/day of week
   enum RateInCents {DAYTIME = 40, EVENINGS = 25, WEEKENDS = 15};
-  int lengthOfCall = 0;
-  float cost = 0.0f;
+  
+  int lengthOfCall = 0; //user input of length in minutes
+  
+  float cost = 0.0f; //result of calculation
+  
+  //main program, loops until user asks to quit
   while (!isUserFinished)
   {
+    //input loop; until input is verified as valid
     isInputValid = false;
     while (!isInputValid)
     {
       cout << "What day of the week did the call start? (Mo Tu We Th Fr Sa Su) ";
       cin >> dayChar1 >> dayChar2;
-      cout << "DEBUG: char1=" << dayChar1 << ", char2=" << dayChar2 << endl;
+      //cout << "DEBUG: char1=" << dayChar1 << ", char2=" << dayChar2 << endl;
       
       isInputValid = true; //save some code by "assuming" the user inputted correctly first
       switch (dayChar1)
@@ -75,6 +84,7 @@ int main(int argc, char** argv)
             day = SUN;
           else
             isInputValid = false;
+          break;
         default:
           isInputValid = false;
       }
@@ -88,7 +98,7 @@ int main(int argc, char** argv)
     {
       cout << "At what time did the call start? (24-hour format with a colon, 00:00) ";
       cin >> hour >> throwAwayTheColon >> minute;
-      cout << "DEBUG: hour=" << hour << ", minute=" << minute << ", char=" << throwAwayTheColon << endl;
+      //cout << "DEBUG: hour=" << hour << ", minute=" << minute << ", char=" << throwAwayTheColon << endl;
       if (hour > 23 || hour < 0)
       {
         cout << hour << " was not a valid hour. Please try again." << endl;
@@ -131,9 +141,11 @@ int main(int argc, char** argv)
       else
         rate = DAYTIME;
     
+    //calculate total cost
     cost = lengthOfCall * rate / 100.0; //calculate cost in cents, and convert to dollars
     
-    cout << "The cost of the call was $" << cost << endl;
+    //output results of this calculation
+    cout << "The cost of the call was $" << fixed << setprecision(2) << cost << endl;
     
     //determine if the user would like to repeat the calculation
     cout << endl;
