@@ -41,62 +41,65 @@ int main(int argc, char** argv)
       }
     }
     
-    int i;
+    int currValue, currPlace, prevPlace;
+    char currDigit, halfDigit, prevDigit;
     
-    int currValue = 0;
+    currPlace = 10000; //set up starting place before; everything is based off of that
+    do
+    {
+      prevPlace = currPlace;
+      currPlace /= 10;
+      if (currPlace == 1000)
+      {
+        currDigit = 'M';
+        halfDigit = '*';
+        prevDigit = '*';
+      } 
+      else if (currPlace == 100)
+      {
+        prevDigit = currDigit;
+        currDigit = 'C';
+        halfDigit = 'D';
+      }
+      else if (currPlace == 10)
+      {
+        prevDigit = currDigit;
+        currDigit = 'X';
+        halfDigit = 'L';
+      }
+      else if (currPlace == 1)
+      {
+        prevDigit = currDigit;
+        currDigit = 'I';
+        halfDigit = 'V';
+      }
+      
+      currValue = arabic / currPlace; //uses integer division to quickly determine # of digits
+      cout << "DEBUG number of " << currPlace << "'s: " << currValue << endl;
+      if (currValue == 9)
+      {
+        cout << currDigit << prevDigit;
+      }
+      else if (currValue == 4)
+      {
+        cout << currDigit << halfDigit;
+      }
+      else // 1 - 3, 5 - 8
+      {
+        if (currValue >= 5) //5 - 8
+        {
+          cout << halfDigit;
+          currValue = currValue - 5;
+        }
+        for ( ; currValue > 0; --currValue)
+          cout << currDigit;
+      }
+      arabic %= currPlace;
+      cout << endl << "DEBUG: leftovers: " << arabic << endl;
+      
+    }
+    while (currDigit != 'I');
     
-    int currPlace = 1000;
-    char currDigit = 'M';
-    int currMaxValue = 10;
-    char lessDigit = 'C';
-    
-    currValue = arabic / currPlace; //uses integer division to quickly determine # of 1000's digits
-    cout << "DEBUG number of " << currPlace << "'s: " << currValue << endl;
-    if (arabic / currPlace == (currPlace * 10 - currPlace) / currPlace)
-      cout << lessDigit << currDigit;
-    else
-      for (currValue = arabic / currPlace; currValue > 0; --currValue)
-        cout << currDigit;
-    arabic %= currPlace;
-    cout << endl << "leftovers: " << arabic << endl;
-    
-    currPlace = 1000;
-    currMaxValue = 10;
-    currDigit = 'M';
-    lessDigit = 'C';
-    cout << "num 500's: " << arabic / 500 << endl;
-    for (i = 0; i < arabic / 500; ++i) //uses integer division 
-      cout << 'D';
-    cout << endl << "leftovers: " << (arabic % 500) << endl;
-    arabic %= 500;
-    
-    cout << "num 100's: " << arabic / 100 << endl;
-    for (i = 0; i < arabic / 100; ++i) //uses integer division 
-      cout << 'C';
-    cout << endl << "leftovers: " << (arabic % 100) << endl;
-    arabic %= 100;
-    
-    cout << "num 50's: " << arabic / 50 << endl;
-    for (i = 0; i < arabic / 50; ++i) //uses integer division 
-      cout << 'L';
-    cout << endl << "leftovers: " << (arabic % 50) << endl;
-    arabic %= 50;
-    
-    cout << "num 10's: " << arabic / 10 << endl;
-    for (i = 0; i < arabic / 10; ++i) //uses integer division 
-      cout << 'X';
-    cout << endl << "leftovers: " << (arabic % 10) << endl;
-    arabic %= 10;
-    
-    cout << "num 5's: " << arabic / 5 << endl;
-    for (i = 0; i < arabic / 5; ++i) //uses integer division 
-      cout << 'V';
-    cout << endl << "leftovers: " << (arabic % 5) << endl;
-    arabic %= 5;
-    
-    cout << "num 1's: " << arabic / 1 << endl;
-    for (i = 0; i < arabic / 1; ++i) //uses integer division 
-      cout << 'I';
     
     //determine if the user would like to repeat the calculation (copied from my Savitch_9thEd_Chap3_ProgProj1)
     cout << endl;
