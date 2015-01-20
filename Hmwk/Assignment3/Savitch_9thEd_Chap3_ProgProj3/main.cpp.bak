@@ -33,7 +33,10 @@ int main(int argc, char** argv)
       if (arabic < 0) //don't accept negative numbers
       {
         cout << "The number cannot be negative. Please input again." << endl;
-        isInputValid = false;
+      }
+      else if (arabic > 3999)
+      {
+        cout << "Conventional Roman numerals cannot represent a number above 4000 or above." << endl;
       }
       else
       {
@@ -41,41 +44,40 @@ int main(int argc, char** argv)
       }
     }
     
-    int currValue, currPlace, prevPlace;
-    char currDigit, halfDigit, prevDigit;
     
-    currPlace = 10000; //set up starting place before; everything is based off of that
+    int currValue, currPlace, prevPlace;
+    char currDigit, halfDigit, prevDigit = 'e';
+    
+    //loop through all the digits: 1000, 100, 10, 1
+    currPlace = 10000; //one order of magnitude higher than 1000, the first digit to calculate.
     do
     {
       prevPlace = currPlace;
       currPlace /= 10;
+      prevDigit = currDigit;
       if (currPlace == 1000)
       {
         currDigit = 'M';
-        halfDigit = '*';
-        prevDigit = '*';
+        halfDigit = 'e';
       } 
-      else if (currPlace == 100) // 900 == CM, 800 == DCCC, 700 == DCC, 500 == D, 400 = CD, 100 == C
+      else if (currPlace == 100)
       {
-        prevDigit = currDigit;
         currDigit = 'C';
         halfDigit = 'D';
       }
       else if (currPlace == 10)
       {
-        prevDigit = currDigit;
         currDigit = 'X';
         halfDigit = 'L';
       }
       else if (currPlace == 1)
       {
-        prevDigit = currDigit;
         currDigit = 'I';
         halfDigit = 'V';
       }
       
       currValue = arabic / currPlace; //uses integer division to quickly determine # of digits
-      cout << "DEBUG number of " << currPlace << "'s: " << currValue << endl;
+      //cout << "DEBUG number of " << currPlace << "'s: " << currValue << endl;
       if (currValue == 9)
       {
         cout << currDigit << prevDigit;
@@ -94,11 +96,11 @@ int main(int argc, char** argv)
         for ( ; currValue > 0; --currValue)
           cout << currDigit;
       }
-      arabic %= currPlace;
-      cout << endl << "DEBUG: leftovers: " << arabic << endl;
       
+      arabic %= currPlace;
+      //cout << endl << "DEBUG: leftovers: " << arabic << endl;
     }
-    while (currDigit != 'I');
+    while (currDigit != 'I'); //end the loop after the 1's digits
     
     
     //determine if the user would like to repeat the calculation (copied from my Savitch_9thEd_Chap3_ProgProj1)
@@ -107,6 +109,8 @@ int main(int argc, char** argv)
     cin >> quit;
     if (quit == 'N' || quit == 'n')
       isUserFinished = true;
+    else
+      cout >> endl; //a blank line for readability
   }
   return 0;
 }
