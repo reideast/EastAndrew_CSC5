@@ -8,6 +8,7 @@
 
 //System Libraries
 #include <iostream>
+#include <iomanip>
 #include <cmath>
 using namespace std;
 
@@ -18,6 +19,8 @@ using namespace std;
 //Execution Begins Here
 int main(int argc, char** argv)
 {
+  cout << setprecision(16);
+  
   //main program, loops until user asks to quit (copied from my Savitch_9thEd_Chap3_ProgProj1)
   bool isUserFinished = false; //controls main loop
   char quit = 0;
@@ -26,7 +29,6 @@ int main(int argc, char** argv)
   {
     float x = 0.0f;
     double approx = 0.0;
-    double prevFactorial = 0; //as recommend by problem to prevent "integer overflow"
     //input loop; until input is verified as valid (copied from my Savitch_9thEd_Chap3_ProgProj1)
     isInputValid = false;
     while (!isInputValid)
@@ -40,14 +42,32 @@ int main(int argc, char** argv)
     }
     
     cout << "The standard value of e^" << x << " = " << exp(x) << endl;
+
+    // ****** naive way:
+    // approx = 1.0;
+    // double prevFactorial = 1; //as recommend by problem to prevent "integer overflow"
+    // for (int n = 1; n <= 100; ++n)
+    // {
+      // cout << endl << "x^n=" << pow(x, n) << endl;
+      // cout << "fact(" << n << ")=" << prevFactorial * n << endl;
+      // approx = approx + (pow(x, n) / (prevFactorial *= n));
+      // cout << n << "=" << approx << " ";
+      // if (!(n % 10))
+        // cout << endl;
+    // }
     
-    approx = 1.0;
-    prevFactorial = 1;
+    /*
+      currTerm -> x^(n-1)*x / (n-1)!*n
+      prev     ->  x^(n-1) / (n-1)!
+      currTerm -> (x^(n-1) / (n-1!)) * (x / n)
+      currTerm -> (prev) * (x / n)
+    */
+    approx = 0.0;
+    double prevSequenceItem = 1.0;
     for (int n = 1; n <= 100; ++n)
     {
-      cout << endl << "x^n=" << pow(x, n) << endl;
-      cout << "fact(" << n << ")=" << prevFactorial * n << endl;
-      approx = approx + (pow(x, n) / (prevFactorial *= n));
+      approx = approx + prevSequenceItem;
+      prevSequenceItem = prevSequenceItem * (x / n);
       cout << n << "=" << approx << " ";
       if (!(n % 10))
         cout << endl;
