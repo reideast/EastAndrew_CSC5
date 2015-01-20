@@ -41,32 +41,33 @@ int main(int argc, char** argv)
       }
     }
     
+    //NOTE: FIRST DRAFT DOES NOT ACCOUNT FOR less-than-one ie. 4 == IV
     int i;
     
     int currValue = 0;
-    
+    int currMaxValue = 10;
     int currPlace = 1000;
     char currDigit = 'M';
-    int currMaxValue = 10;
     char lessDigit = 'C';
     
     currValue = arabic / currPlace; //uses integer division to quickly determine # of 1000's digits
     cout << "DEBUG number of " << currPlace << "'s: " << currValue << endl;
-    if (arabic / currPlace == (currPlace * 10 - currPlace) / currPlace)
-      cout << lessDigit << currDigit;
-    else
-      for (currValue = arabic / currPlace; currValue > 0; --currValue)
+    for (currValue = arabic / currPlace; currValue > 0; --currValue)
+    {
+      if (currValue == (currMaxValue - 1))
+      {
+        cout << lessDigit << currDigit;
+        currValue = 0;
+      }
+      else
         cout << currDigit;
+    }
     arabic %= currPlace;
     cout << endl << "leftovers: " << arabic << endl;
     
-    currPlace = 1000;
-    currMaxValue = 10;
-    currDigit = 'M';
-    lessDigit = 'C';
     cout << "num 500's: " << arabic / 500 << endl;
     for (i = 0; i < arabic / 500; ++i) //uses integer division 
-      cout << 'D';
+      cout << 'L';
     cout << endl << "leftovers: " << (arabic % 500) << endl;
     arabic %= 500;
     
