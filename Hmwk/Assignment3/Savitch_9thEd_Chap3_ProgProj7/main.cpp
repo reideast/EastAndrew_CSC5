@@ -42,7 +42,7 @@ int main(int argc, char** argv)
     
     cout << "The standard value of e^" << x << " = " << exp(x) << endl;
 
-    // ****** naive way:
+    // ****** naive way, which overflows pretty much any data type I have attempted:
     // approx = 1.0;
     // double prevFactorial = 1; //as recommend by problem to prevent "integer overflow"
     // for (int n = 1; n <= 100; ++n)
