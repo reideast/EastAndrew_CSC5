@@ -19,7 +19,7 @@ using namespace std;
 //Execution Begins Here
 int main(int argc, char** argv)
 {
-  cout << setprecision(16);
+  cout << setprecision(8);
   
   //main program, loops until user asks to quit (copied from my Savitch_9thEd_Chap3_ProgProj1)
   bool isUserFinished = false; //controls main loop
@@ -28,7 +28,6 @@ int main(int argc, char** argv)
   while (!isUserFinished)
   {
     float x = 0.0f;
-    double approx = 0.0;
     //input loop; until input is verified as valid (copied from my Savitch_9thEd_Chap3_ProgProj1)
     isInputValid = false;
     while (!isInputValid)
@@ -36,7 +35,7 @@ int main(int argc, char** argv)
       cout << "For e^x, what is x? ";
       cin >> x;
       if (x < 0) //don't accept negative numbers
-        cout << "The amount of the loan cannot be negative. Please input again." << endl;
+        cout << "The exponent must be zero or greater. Please input again." << endl;
       else
         isInputValid = true;
     }
@@ -56,13 +55,14 @@ int main(int argc, char** argv)
         // cout << endl;
     // }
     
+    //non-naive calculation needed to prevent overflow:
     /*
       currTerm -> x^(n-1)*x / (n-1)!*n
       prev     ->  x^(n-1) / (n-1)!
       currTerm -> (x^(n-1) / (n-1!)) * (x / n)
-      currTerm -> (prev) * (x / n)
+      currTerm == (prev) * (x / n)
     */
-    approx = 0.0;
+    double approx = 0.0; //double variable type chosen purposefully to maintain precision for at least 8 digits displayed
     double prevSequenceItem = 1.0;
     for (int n = 1; n <= 100; ++n)
     {
