@@ -41,14 +41,17 @@ int main(int argc, char** argv)
         isInputValid = true;
     }
     
-    cout << "The standard value of Pi is " << PI << endl;
+    cout << "The standard value of Pi is  " << M_PI << endl; //M_PI from <cmath>
 
     float sum = 0.0;
     for (int i = 0; i <= n; ++i)
     {
-      sum += ((i % 2) ? 1 : -1) / (2 * i + 1);
+      //cout << "DEBUG: Term#" << i << "=" << (((i % 2) ? -1.0 : 1.0) / (2 * i + 1)) << endl;
+      sum += ((i % 2) ? -1.0 : 1.0) / (2 * i + 1);
     }
-    sum *= 4.0;
+    sum *= 4;
+    
+    cout << "The estimated value of Pi is " << sum << endl;
     
     //determine if the user would like to repeat the calculation (copied from my Savitch_9thEd_Chap3_ProgProj1)
     cout << endl;

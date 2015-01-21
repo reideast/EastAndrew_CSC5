@@ -2,8 +2,8 @@
     File:   main.cpp
     Author: Andrew Reid East
     Class: CSC-5 40718
-    Created on January 14, 2015, 8:39 PM
-    Purpose: to calculate the Harris-Benedict basal metabolic rate
+    Created on January 20, 2015, 6:28 PM
+    Purpose: Modify a previous calculation for BMR, add in choice for Activity Level
  */
 
 //System Libraries
@@ -34,6 +34,25 @@ int main(int argc, char** argv)
   cout << "Gender (M or F): ";
   cin >> gender;
   
+  //Modified code for Savitch_9thEd_Chap3_ProgProj10
+  int activityChoice = 0;
+  cout << "Enter 1 - 4 for you activity level:" << endl;
+  cout << "  1. Sedentary" << endl;
+  cout << "  2. Somewhat active (exercise occasionally)" << endl;
+  cout << "  3. Active (exercise 3–4 days per week)" << endl;
+  cout << "  4. Highly active (exercise every day)" << endl;
+  cout << "> ";
+  cin >> activityChoice;
+  if (activityChoice < 1 || activityChoice > 4)
+  {
+    cout << "Your choice for activity level was not between 1 and 4. Cannot calculate.";
+    return 1;
+  }
+  
+  //BMR is 120% if choice 1 (110 + 10), 130 if choice 2 (110 + 20), and so on:
+  float percentIncrease = (110 + activityChoice * 10) / 100.0;
+  //END Modified code for Savitch_9thEd_Chap3_ProgProj10
+  
   //set up variables for calculation
   float BMR = 0.0f;
   int baseBMR;
@@ -59,6 +78,9 @@ int main(int argc, char** argv)
   }
   
   BMR = baseBMR + weightFactor * weight + heightFactor * height + ageFactor * age;
+  //cout << "DEBUG: BMR in Calories: " << BMR << endl;
+  
+  BMR *= percentIncrease; //Modified code for Savitch_9thEd_Chap3_ProgProj10
   
   //cout << "DEBUG: BMR in Calories: " << BMR << endl;
   
