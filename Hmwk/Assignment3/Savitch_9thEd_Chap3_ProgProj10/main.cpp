@@ -39,7 +39,7 @@ int main(int argc, char** argv)
   cout << "Enter 1 - 4 for you activity level:" << endl;
   cout << "  1. Sedentary" << endl;
   cout << "  2. Somewhat active (exercise occasionally)" << endl;
-  cout << "  3. Active (exercise 3–4 days per week)" << endl;
+  cout << "  3. Active (exercise 3-4 days per week)" << endl;
   cout << "  4. Highly active (exercise every day)" << endl;
   cout << "> ";
   cin >> activityChoice;

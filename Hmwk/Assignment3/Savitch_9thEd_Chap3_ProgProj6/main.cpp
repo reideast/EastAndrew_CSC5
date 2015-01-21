@@ -71,7 +71,7 @@ int main(int argc, char** argv)
     }
     cout << endl;
     
-    cout << "The total amound of crud after " << daysOfCrud << " days is " << poundsOfCrud << " lbs." << endl;
+    cout << "The total amount of crud after " << daysOfCrud << " days is " << poundsOfCrud << " lbs." << endl;
     
     //determine if the user would like to repeat the calculation (copied from my Savitch_9thEd_Chap3_ProgProj1)
     cout << endl;
@@ -82,5 +82,6 @@ int main(int argc, char** argv)
     else
       cout << endl; //a blank line for readability
   }
+  
   return 0;
 }
