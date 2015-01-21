@@ -42,5 +42,28 @@ int main(int argc, char** argv)
     }
   }
   
+  //creative solution: treat each digit differently, and use nested loops
+  digit1 = 0, digit2 = 0, digit3 = 0, digit4 = 0;
+  //rule 2: digit1 (1000's) is 3 times tens place (digit3), so the only pairs are 9/3, 6/2, 3/1
+  for (digit3 = 1; digit3 <= 3; ++digit3) //1..2..3
+  {
+    cout << "digit3=" << digit3 << endl;
+    digit1 = digit3 * 3; //rule 2
+    cout << "digit1=" << digit1 << endl;
+    //rule 3: number is odd, so the last digit can only be 1..3..5..7..9
+    for (digit4 = 1; digit4 <= 9; digit4 += 2)
+    {
+      cout << "digit4=" << digit4 << endl;
+      if (digit4 == digit3 || digit4 == digit1) //skip digits that match 1000's or 10's
+        continue; //skip this loop (digit4's odd number loop only)
+      for (digit2 = 0; digit2 <= 9; ++digit2) //100's place can be any number 0-9, so it should be the innermost loop
+      {
+        cout << "digit2=" << digit2 << endl;
+        
+      }
+    }
+  }
+  
+  
   return 0;
 }
