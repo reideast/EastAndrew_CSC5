@@ -13,6 +13,7 @@ using namespace std;
 //User Libraries
 
 //Global Constants
+const int EPOCH_YEAR = 1970;
 
 //Function Prototypes
 

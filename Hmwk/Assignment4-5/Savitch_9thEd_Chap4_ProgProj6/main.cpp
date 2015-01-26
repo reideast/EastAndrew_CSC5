@@ -17,25 +17,25 @@ using namespace std;
 
 //Function Prototypes
 //buyAnItem: Let a user insert coins into a machine until they have spent enough to buy it
-bool buyAnItem(float itemPrice, float& change);
+bool buyAnItem(int itemPrice, int& change);
 //Preconditions:
-//  itemPrice is the item's cost in dollars (must be in multiples of 5 cents, since this machine doesn't take pennies)
+//  itemPrice is the item's cost in cents (must be in multiples of 5 cents, since this machine doesn't take pennies)
 //  change is an initialized variable
 //Postconditions:
 //  returns true if the item was successfully bought
 //  returns false if the user canceled the transaction
-//  change will contain any money due back to the customer in dollars
+//  change will contain any money due back to the customer in cents
 
 //insertACoin: Asks the user to insert one valid coin or cancel the transaction
-float insertACoin();
+int insertACoin();
 //Preconditions:
 //  getInput function is available
 //Postconditions:
-//  returns the value of the coin inserted in dollars
+//  returns the value of the coin inserted in cents
 //  returns a negative number if the user canceled the whole transaction
 
 //itemPriceReached: Determines if enough money has been inserted to purchase an item
-bool itemPriceReached(float price, float moneyIn, float& change);
+bool itemPriceReached(int price, int moneyIn, int& change);
 //Preconditions:
 //  price is the cost of the item in dollars
 //  moneyIn is the total money in dollars
@@ -70,16 +70,16 @@ int main(int argc, char** argv)
   char quit = 0;
   while (!isUserFinished)
   {
-    float change = 0.0f;
+    int change = 0;
     
     //buy an item worth $3.50
-    cout << "You are buying a deep fried twinkie!" << endl;
-    if (buyAnItem(3.50f, change))
-      cout << "Enjoy your item!";
+    cout << "You are buying a deep-fried twinkie for $3.50." << endl;
+    if (buyAnItem(350, change))
+      cout << "Enjoy your deep-fried twinkie";
     else
       cout << "Transaction canceled.";
     if (change > 0)
-      cout << " Your change is $" << change;
+      cout << " Your change is $" << (change / 100.0f);
     cout << endl;
     
     
@@ -95,10 +95,10 @@ int main(int argc, char** argv)
   return 0;
 }
 
-bool buyAnItem(float itemPrice, float& change)
+bool buyAnItem(int itemPrice, int& change)
 {
-  float totalMoney = 0.0f;
-  float currentCoin = 0.0f;
+  int totalMoney = 0;
+  int currentCoin = 0;
   while (!itemPriceReached(itemPrice, totalMoney, change)) //while the user has NOT inputted enough money to buy it
   {
     currentCoin = insertACoin();
@@ -109,21 +109,42 @@ bool buyAnItem(float itemPrice, float& change)
     }
     else
     {
-      cout << "You have inserted $" << currentCoin << ". ";
+      cout << "You have inserted ";
+      if (currentCoin >= 100)
+        cout << "$" << (currentCoin / 100.0f);
+      else
+        cout << currentCoin << " cents";
+      cout << ". ";
       totalMoney += currentCoin;
-      cout << "The total money inserted is " << totalMoney << ". " << endl;
+      cout << "The total money inserted is $" << (totalMoney / 100.0f) << ". " << endl << endl;
     }
   }
   //according to the function definition, itemPriceReached will set change = overflow money
   return true; //transaction successful because user inserted enough money without canceling
 }
 
-float insertACoin()
+int insertACoin()
 {
-  return 1;
+  cout << "Please type a number corresponding to the coin you inserted: " << endl
+       << "1. Dollar coin" << endl
+       << "2. Quarter" << endl
+       << "3. Dime" << endl
+       << "4. Nickel" << endl
+       << "0. Cancel & return money" << endl;
+  int coin = 0;
+  getInput("> ", coin, 0, 4);
+  switch (coin)
+  {
+    case 0: return -1;
+    case 1: return 100;
+    case 2: return 25;
+    case 3: return 10;
+    case 4: return 5;
+    default: return -1; //really shouldn't be possible unless getInput() is broken
+  }
 }
 
-bool itemPriceReached(float price, float moneyIn, float& change)
+bool itemPriceReached(int price, int moneyIn, int& change)
 {
   if (moneyIn >= price)
   {
