@@ -35,7 +35,7 @@ float insertACoin();
 //  returns a negative number if the user canceled the whole transaction
 
 //itemPriceReached: Determines if enough money has been inserted to purchase an item
-bool itemPriceReached(float price, float moneyIn, float& change)
+bool itemPriceReached(float price, float moneyIn, float& change);
 //Preconditions:
 //  price is the cost of the item in dollars
 //  moneyIn is the total money in dollars
@@ -43,7 +43,7 @@ bool itemPriceReached(float price, float moneyIn, float& change)
 //Postconditions:
 //  returns true if moneyIn is enough to purchase the item at price dollars
 //    and change will be set to any dollars over the purchase price
-//  returns price if more money is needed
+//  returns false if more money is needed
 //    and change will not be modified
 
 
@@ -73,6 +73,7 @@ int main(int argc, char** argv)
     float change = 0.0f;
     
     //buy an item worth $3.50
+    cout << "You are buying a deep fried twinkie!" << endl;
     if (buyAnItem(3.50f, change))
       cout << "Enjoy your item!";
     else
@@ -108,34 +109,32 @@ bool buyAnItem(float itemPrice, float& change)
     }
     else
     {
+      cout << "You have inserted $" << currentCoin << ". ";
       totalMoney += currentCoin;
+      cout << "The total money inserted is " << totalMoney << ". " << endl;
     }
   }
-  //itemPriceReached will set change = overflow money
+  //according to the function definition, itemPriceReached will set change = overflow money
   return true; //transaction successful because user inserted enough money without canceling
 }
 
+float insertACoin()
+{
+  return 0.25f;
+}
 
-
-//insertACoin: Asks the user to insert one valid coin or cancel the transaction
-float insertACoin();
-//Preconditions:
-//  getInput function is available
-//Postconditions:
-//  returns the value of the coin inserted in dollars
-//  returns a negative number if the user canceled the whole transaction
-
-//itemPriceReached: Determines if enough money has been inserted to purchase an item
 bool itemPriceReached(float price, float moneyIn, float& change)
-//Preconditions:
-//  price is the cost of the item in dollars
-//  moneyIn is the total money in dollars
-//  change is an initialized variable
-//Postconditions:
-//  returns true if moneyIn is enough to purchase the item at price dollars
-//    and change will be set to any dollars over the purchase price
-//  returns price if more money is needed
-//    and change will not be modified
+{
+  if (moneyIn >= price)
+  {
+    change = moneyIn - price;
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
 
 
 
