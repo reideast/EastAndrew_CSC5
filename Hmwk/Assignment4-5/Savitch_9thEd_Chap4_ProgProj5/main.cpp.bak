@@ -60,11 +60,9 @@ int main(int argc, char** argv)
     getInput("How many minutes did you exercise? ", timeElapsed);
     getInput("How many Calories are in one serving of your favorite food? ", caloriesInFood);
     
-    //use functions to calculate calories needed
     float caloriesBMR = calcBMR(weight);
     float caloriesUsedExercising = caloriesBurned(intensity, weight, timeElapsed);
     
-    //Need to use 10% of calories consumed in one day to digest calories consumed...circular logic??
     //algebra: 
     // calTotal = bmr + exercise + 1/10*calTotal --> 10% of calories total needed to digest
     // -0.1*calTotal              -0.1*calTotal

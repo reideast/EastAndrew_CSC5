@@ -110,7 +110,7 @@ string intToEnglish(int value)
       case 1: english += "One"; break;
       case 0:
         if (!value) //if value == zero
-          english += "zero" ;
+          english += "Zero" ;
         else //else the tens digit equal something, eg. 20, 30. So, remove the dash added before
           english.resize(english.size() - 1);
         break;

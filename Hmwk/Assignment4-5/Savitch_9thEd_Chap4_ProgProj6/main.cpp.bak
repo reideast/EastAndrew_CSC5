@@ -115,10 +115,10 @@ bool buyAnItem(float itemPrice, float& change)
   return true; //transaction successful because user inserted enough money without canceling
 }
 
-float insertACoin()
-{
-  return 0.25f;
-}
+
+
+//insertACoin: Asks the user to insert one valid coin or cancel the transaction
+float insertACoin();
 //Preconditions:
 //  getInput function is available
 //Postconditions:
