@@ -4,6 +4,8 @@
     Class: CSC-5 40718
     Created on January 25, 2015, 9:34 PM
     Purpose: Compute the different between a start time and a time up to 24 hours in the future
+             Also, converts a time into Unix time so things are absolute.
+            (but this is transparent to the main function)
  */
 
 //System Libraries
@@ -14,6 +16,11 @@ using namespace std;
 
 //Global Constants
 const int EPOCH_YEAR = 1970;
+const int EPOCH_MONTH = 1;
+const int EPOCH_DAY = 1;
+const int EPOCH_HOUR = 0;
+const int EPOCH_MIN = 0;
+const int EPOCH_SEC = 0;
 
 //Function Prototypes
 
@@ -25,6 +32,16 @@ int computeDifference(int startHour, int startMin, bool startIsAM, int futureHou
 //Postconditions:
 //  returns how many minutes are between the times
 
+
+//absoluteTime: Given a time and date, computes how many seconds have passed since the Unix epoch
+int absoluteTime(int year, int month, int day, int hour, int min, int sec);
+//Precondition:
+//  year between 1901 and 2038, I think, or it will overflow signed int
+//  month 1-12, day 1-31, hour 0-23, min 0-59, sec 0-59
+//Postconditions:
+//  returns the number of seconds since the Epoch
+
+//NOTE: My original function that does not use a date, or Unix time
 //absoluteTime: Given a time, compute how many minutes have passed since midnight of that day
 int absoluteTime(int hour, int minute, bool isAM);
 //Preconditions:
@@ -89,30 +106,77 @@ int main(int argc, char** argv)
   return 0;
 }
 
-
+//Note: uses fake dates to be able to utilize Unix time
 int computeDifference(int startHour, int startMin, bool startIsAM, int futureHour, int futureMin, bool futureIsAM)
 {
-  //get minutes from midnight for each time
-  int startTime = absoluteTime(startHour, startMin, startIsAM);
-  int futureTime = absoluteTime(futureHour, futureMin, futureIsAM);
+  cout << "test unix time 00:00:01 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 0, 1);
+  cout << "test unix time 00:01:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 1, 0);
+  cout << "test unix time 01:00:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 1, 0, 0);
+  cout << "test unix time 00:00:00 Jan 2 1970: " << absoluteTime(1970, 1, 2, 0, 0, 0);
+  cout << "test unix time 00:00:00 Feb 1 1970: " << absoluteTime(1970, 1, 2, 0, 0, 0);
+  cout << "test unix time 00:00:00 Jan 1 1971: " << absoluteTime(1971, 1, 1, 0, 0, 0);
   
-  //if the time in the future is earlier in the day than the time in the past,
-  //  then adjust it to be in the future by adding 24-hours worth of minutes
+  //set up fake date (and seconds)
+  const int YR = 1970, MTH = 1, DY = 1, SEC = 0;
+  
+  //converts hours to military time: (startIsAM ? (startHour % 12) : (startHour + 12))
+  //  12am --> 0 by using modulo 12
+  //  1am-11am --> 1-11
+  //  12pm-11pm --> 12 - 23
+  int startTime = absoluteTime(YR, MTH, DY, (startIsAM ? (startHour % 12) : (startHour + 12)), startMin, SEC);
+  int futureTime = absoluteTime(YR, MTH, DY, (futureIsAM ? (futureHour % 12) : (futureHour + 12)), futureMin, SEC);
+  
+  //If futureTime has now been determined to be before startTime, advance it by one full day
   //Note: I judged that problem was ambiguous if "up to 24 hours" was inclusive of 24 hours,
   //  so I decided if the start time == future time, they did in fact deign to go a full 24 hours
   if (futureTime <= startTime)
-    futureTime += 24 * 60; // += 24-hours
+    futureTime = absoluteTime(YR, MTH, (DY + 1), (futureIsAM ? (futureHour % 12) : (futureHour + 12)), futureMin, SEC);
   
-  //return the difference in the times, ie. how many minutes have passed
-  return futureTime - startTime;
+  //return the difference in the times, ie. how many seconds have passed
+  //converts seconds back to minutes
+  return (futureTime - startTime) / 60;
 }
 
-//absoluteTime: Given a time, compute how many minutes have passed since midnight of that day
-int absoluteTime(int hour, int minute, bool isAM)
+/* My original function:
+ * int computeDifference(int startHour, int startMin, bool startIsAM, int futureHour, int futureMin, bool futureIsAM)
+ * {
+ *   //get minutes from midnight for each time
+ *   int startTime = absoluteTime(startHour, startMin, startIsAM);
+ *   int futureTime = absoluteTime(futureHour, futureMin, futureIsAM);
+ *   
+ *   //if the time in the future is earlier in the day than the time in the past,
+ *   //  then adjust it to be in the future by adding 24-hours worth of minutes
+ *   //Note: I judged that problem was ambiguous if "up to 24 hours" was inclusive of 24 hours,
+ *   //  so I decided if the start time == future time, they did in fact deign to go a full 24 hours
+ *   if (futureTime <= startTime)
+ *     futureTime += 24 * 60; // += 24-hours
+ *   
+ *   //return the difference in the times, ie. how many minutes have passed
+ *   return futureTime - startTime;
+ * }
+*/
+
+//absoluteTime: Given a time, compute how many minutes have passed since the Unix Epoch, define in global constants
+const int EPOCH_YEAR = 1970;
+const int EPOCH_MONTH = 1;
+const int EPOCH_DAY = 1;
+const int EPOCH_HOUR = 0;
+const int EPOCH_MIN = 0;
+const int EPOCH_SEC = 0;
+int absoluteTime(int year, int month, int day, int hour, int min, int sec)
 {
   //hour (12 => 0) * 60 minutes, plus minutes, add 12 hours worth of minutes if afternoon
   return ((hour % 12) * 60) + minute + (isAM ? 0 : (12 * 60));
 }
+
+/* my original function:
+ * //absoluteTime: Given a time, compute how many minutes have passed since midnight of that day
+ * int absoluteTime(int hour, int minute, bool isAM)
+ * {
+ *   //hour (12 => 0) * 60 minutes, plus minutes, add 12 hours worth of minutes if afternoon
+ *   return ((hour % 12) * 60) + minute + (isAM ? 0 : (12 * 60));
+ * }
+*/
 
 //getTime: inputs a time from <iostream>
 void getTime(int& hour, int& minute, bool& isAM)
