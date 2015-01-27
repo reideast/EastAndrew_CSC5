@@ -4,7 +4,7 @@
     Class: CSC-5 40718
     Created on January 25, 2015, 9:34 PM
     Purpose: Compute the different between a start time and a time up to 24 hours in the future
-             Also, converts a time into Unix time so things are absolute.
+             Also, converts a time into Unix time...for fun.
             (but this is transparent to the main function)
  */
 
@@ -40,7 +40,20 @@ int absoluteTime(int year, int month, int day, int hour, int min, int sec);
 //  month 1-12, day 1-31, hour 0-23, min 0-59, sec 0-59
 //Postconditions:
 //  returns the number of seconds since the Epoch
-//  does NOT account for leap seconds!
+//  as defined for Unix time, accounts for leap years but not for precise leap seconds
+
+//dayOfYear: a helper function to absoluteTime that returns between 1 and 366 for the month/day/year combo
+int dayOfYear(int year, int month, int day);
+
+//calculates leap days that happened in all the years to EPOCH_YEAR
+// does not not count the current year
+int leapDaysSinceEpoc(int year);
+
+//a helper function to return true if year is a leap year, false if not
+bool isLeapYear(int year);
+
+// basic driver program tests for absoluteTime()
+void testUnixTime();
 
 //NOTE: My original function that does not use a date, or Unix time
 //absoluteTime: Given a time, compute how many minutes have passed since midnight of that day
@@ -87,11 +100,13 @@ int main(int argc, char** argv)
     getTime(startHour, startMin, startIsAM);
     cout << "The start time is " << startHour << ":" << startMin << " " << (startIsAM ? 'A' : 'P') << 'M' << '.' << endl;
     cout << endl;
+    
     cout << "What is the future time?" << endl;
     getTime(futureHour, futureMin, futureIsAM);
     cout << "The future time is " << futureHour << ":" << futureMin << " " << (futureIsAM ? 'A' : 'P') << 'M' << '.' << endl;
     cout << endl;
     
+    //Note: did not change this function call when I switched to Unix time
     minInFuture = computeDifference(startHour, startMin, startIsAM, futureHour, futureMin, futureIsAM);
     cout << "The time machine must travel " << minInFuture << " minutes into the future." << endl;
     
@@ -110,22 +125,17 @@ int main(int argc, char** argv)
 //Note: uses fake dates to be able to utilize Unix time
 int computeDifference(int startHour, int startMin, bool startIsAM, int futureHour, int futureMin, bool futureIsAM)
 {
-  cout << "test unix time 00:00:01 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 0, 1);
-  cout << "test unix time 00:01:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 1, 0);
-  cout << "test unix time 01:00:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 1, 0, 0);
-  cout << "test unix time 00:00:00 Jan 2 1970: " << absoluteTime(1970, 1, 2, 0, 0, 0);
-  cout << "test unix time 00:00:00 Feb 1 1970: " << absoluteTime(1970, 1, 2, 0, 0, 0);
-  cout << "test unix time 00:00:00 Jan 1 1971: " << absoluteTime(1971, 1, 1, 0, 0, 0);
+
   
   //set up fake date (and seconds)
-  const int YR = 1970, MTH = 1, DY = 1, SEC = 0;
+  const int YR = EPOCH_YEAR, MTH = EPOCH_MONTH, DY = EPOCH_DAY, SEC = EPOCH_SEC;
   
   //converts hours to military time: (startIsAM ? (startHour % 12) : (startHour + 12))
-  //  12am --> 0 by using modulo 12
-  //  1am-11am --> 1-11
-  //  12pm-11pm --> 12 - 23
-  int startTime = absoluteTime(YR, MTH, DY, (startIsAM ? (startHour % 12) : (startHour + 12)), startMin, SEC);
-  int futureTime = absoluteTime(YR, MTH, DY, (futureIsAM ? (futureHour % 12) : (futureHour + 12)), futureMin, SEC);
+  //  12 --> 0 by using modulo 12
+  //  1-11 --> 1-11
+  //  pm + 12 hours
+  int startTime = absoluteTime(YR, MTH, DY, (startHour % 12) + (startIsAM ? 0 : 12), startMin, SEC);
+  int futureTime = absoluteTime(YR, MTH, DY, (futureHour % 12) + (futureIsAM ? 0 : 12), futureMin, SEC);
   
   //If futureTime has now been determined to be before startTime, advance it by one full day
   //Note: I judged that problem was ambiguous if "up to 24 hours" was inclusive of 24 hours,
@@ -157,20 +167,6 @@ int computeDifference(int startHour, int startMin, bool startIsAM, int futureHou
  * }
 */
 
-//absoluteTime: Given a time, compute how many minutes have passed since the Unix Epoch, define in global constants
-const int EPOCH_YEAR = 1970;
-const int EPOCH_MONTH = 1;
-const int EPOCH_DAY = 1;
-const int EPOCH_HOUR = 0;
-const int EPOCH_MIN = 0;
-const int EPOCH_SEC = 0;
-int absoluteTime(int year, int month, int day, int hour, int min, int sec)
-{
-  //hour (12 => 0) * 60 minutes, plus minutes, add 12 hours worth of minutes if afternoon
-  int total = 0;
-  total += (year - EPOCH_YEAR) * 365 * 24 * 60 * 60;
-}
-
 /* my original function:
  * //absoluteTime: Given a time, compute how many minutes have passed since midnight of that day
  * int absoluteTime(int hour, int minute, bool isAM)
@@ -179,6 +175,74 @@ int absoluteTime(int year, int month, int day, int hour, int min, int sec)
  *   return ((hour % 12) * 60) + minute + (isAM ? 0 : (12 * 60));
  * }
 */
+
+//absoluteTime: Given a time, compute how many minutes have passed since the Unix Epoch, define in global constants
+int absoluteTime(int year, int month, int day, int hour, int min, int sec)
+{
+  //hour (12 => 0) * 60 minutes, plus minutes, add 12 hours worth of minutes if afternoon
+  int total = 0;
+  total += (year - EPOCH_YEAR) * 365 * 24 * 60 * 60;
+  total += leapDaysSinceEpoc(year) * 24 * 60 * 60;
+  total += (dayOfYear(year, month, day) - dayOfYear(EPOCH_YEAR, EPOCH_MONTH, EPOCH_DAY)) * 24 * 60 * 60;
+  total += (hour - EPOCH_HOUR) * 60 * 60;
+  total += (min - EPOCH_MIN) * 60;
+  total += (sec - EPOCH_SEC);
+  return total;
+}
+
+int dayOfYear(int year, int month, int day)
+{
+  //initialize total to the day of the current month
+  int total = day;
+  //starting with the current month, add all previous months into the total days of the year
+  switch (month)
+  {
+    case 12: total += 30; //for December, add in November, then all previous months
+    case 11: total += 31;
+    case 10: total += 30;
+    case 9: total += 31;
+    case 8: total += 31;
+    case 7: total += 30;
+    case 6: total += 31;
+    case 5: total += 30;
+    case 4: total += 31;
+    case 3: total += (isLeapYear(year) ? 29 : 28);
+    case 2: total += 31;
+    break;
+  }
+  
+  return total;
+}
+
+//calculates leap days that happened in all the years to EPOCH_YEAR
+// does not not count the current year
+int leapDaysSinceEpoc(int year)
+{
+  int total = 0;
+  for (int i = (year - 1) - ((year - 1) % 4); i >= EPOCH_YEAR; i -= 4)
+    if (isLeapYear(i))
+      ++total;
+  return total;
+}
+
+bool isLeapYear(int year)
+{
+  return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+// basic driver program tests for absoluteTime()
+void testUnixTime()
+{
+  cout << "test unix time 00:00:01 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 0, 1) << endl;
+  cout << "test unix time 00:01:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 0, 1, 0) << endl;
+  cout << "test unix time 01:00:00 Jan 1 1970: " << absoluteTime(1970, 1, 1, 1, 0, 0) << endl;
+  cout << "test unix time 00:00:00 Jan 2 1970: " << absoluteTime(1970, 1, 2, 0, 0, 0) << endl;
+  cout << "test unix time 00:00:00 Feb 1 1970: " << absoluteTime(1970, 2, 1, 0, 0, 0) << endl;
+  cout << "test unix time 00:00:00 Jan 1 1971: " << absoluteTime(1971, 1, 1, 0, 0, 0) << endl;
+  // notable events (from wikipedia)
+  cout << "test unix time 01:46:40 Sept 9 2001: " << absoluteTime(2001, 9, 9, 1, 46, 40) << endl;
+  cout << "test unix time 23:31:30 Feb 13 2009: " << absoluteTime(2009, 2, 13, 23, 31, 30) << endl;
+}
 
 //getTime: inputs a time from <iostream>
 void getTime(int& hour, int& minute, bool& isAM)
