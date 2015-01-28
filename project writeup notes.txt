@@ -1,0 +1,17 @@
+table of contents
+introduction
+how to play, rules
+sample input/output
+pseudocode(?)
+tell where onc example of all the concepts we've learned in class so far:
+use Savitch TOC to find all: do, while, for, if, else, file IO....
+[document the code!]
+flowchart (ALL THE CODE)
+
+into
+desc
+summary
+sample IO
+flowchart
+pseudocode
+crosslist constructs: loops, branches, IO, primvative data types
