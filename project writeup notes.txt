@@ -14,4 +14,4 @@ summary
 sample IO
 flowchart
 pseudocode
-crosslist constructs: loops, branches, IO, primvative data types
+cross-list constructs: loops, branches, IO, primitive data types

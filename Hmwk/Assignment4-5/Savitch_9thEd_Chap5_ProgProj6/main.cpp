@@ -10,7 +10,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include <iomanip>
 using namespace std;
 
 //User Libraries
@@ -47,36 +46,48 @@ int main(int argc, char** argv)
     bool aaronAlive = true, bobAlive = true, charlieAlive = true;
     int aaronWins = 0, bobWins = 0, charlieWins = 0;
     
-    const int MAX_TRIALS = 5000;
-    //const int MAX_TRIALS = 5000000;
+    // const int MAX_TRIALS = 5;
+    const int MAX_TRIALS = 1000;
+    // const int MAX_TRIALS = 5000;
+    // const int MAX_TRIALS = 5000000;
+    // const int MAX_TRIALS = 50000000;
+    
+    cout << "For the \"obvious\" strategy of shooting at the most accurate shooter alive:" << endl;
     for (int count = 1; count <= MAX_TRIALS; ++count)
     {
       aaronAlive = bobAlive = charlieAlive = true;
-      // bobAlive = true;
-      // charlieAlive = true;
       startDuel(aaronAlive, bobAlive, charlieAlive);
       if (aaronAlive)
-      {
-        // cout << "Aaron won trial #" << count << endl;
         ++aaronWins;
-      }
       if (bobAlive)
-      {
-        // cout << "Bob won trial #" << count << endl;
         ++bobWins;
-      }
       if (charlieAlive)
-      {
-        // cout << "Charlie won trial #" << count << endl;
         ++charlieWins;
-      }
-      
-      // cout << endl;
     }
-    cout << endl << "Final Results:" << endl;
+    cout << "Final Results:" << endl;
     cout << "Aaron won   " << aaronWins << " trials (" << (static_cast<float>(aaronWins) / MAX_TRIALS * 100) << "%)" << endl;
     cout << "Bob won     " << bobWins << " trials (" << (static_cast<float>(bobWins) / MAX_TRIALS * 100) << "%)" << endl;
     cout << "Charlie won " << charlieWins << " trials (" << (static_cast<float>(charlieWins) / MAX_TRIALS * 100) << "%)" << endl;
+    cout << endl;
+    
+    aaronWins = bobWins = charlieWins = 0;
+    cout << "For Aaron's new strategy of missing the first round:" << endl;
+    for (int count = 1; count <= MAX_TRIALS; ++count)
+    {
+      aaronAlive = bobAlive = charlieAlive = true;
+      startNewStrategyDuel(aaronAlive, bobAlive, charlieAlive);
+      if (aaronAlive)
+        ++aaronWins;
+      if (bobAlive)
+        ++bobWins;
+      if (charlieAlive)
+        ++charlieWins;
+    }
+    cout << "Final Results:" << endl;
+    cout << "Aaron won   " << aaronWins << " trials (" << (static_cast<float>(aaronWins) / MAX_TRIALS * 100) << "%)" << endl;
+    cout << "Bob won     " << bobWins << " trials (" << (static_cast<float>(bobWins) / MAX_TRIALS * 100) << "%)" << endl;
+    cout << "Charlie won " << charlieWins << " trials (" << (static_cast<float>(charlieWins) / MAX_TRIALS * 100) << "%)" << endl;
+    
     
     //determine if the user would like to repeat the calculation (copied from my Savitch_9thEd_Chap3_ProgProj1)
     cout << endl;
@@ -90,89 +101,72 @@ int main(int argc, char** argv)
   return 0;
 }
 
-startNewStrategyDuel
-
-int startDuel(bool& aaronAlive, bool& bobAlive, bool& charlieAlive)
+int startNewStrategyDuel(bool& aaronAlive, bool& bobAlive, bool& charlieAlive)
 {
   float aaronAcc = 1.0f/3, bobAcc = 0.5f, charlieAcc = 1.0f;
   
-  // int round = 1;
+  int round = 1;
   while (!(
            (aaronAlive&& !bobAlive&& !charlieAlive) ||
            (!aaronAlive&& bobAlive&& !charlieAlive) ||
            (!aaronAlive&& !bobAlive&& charlieAlive)
           ))
   {
-    // cout << "round #" << round << endl;
-    
-    if (aaronAlive)
-    {
+    if (round != 1 && aaronAlive) //aaron intentionally misses the first round
       if (charlieAlive)
-      {
-        // cout << "aaron is shooting at charlie: ";
         shoot(charlieAlive, aaronAcc);
-        // if (!charlieAlive)
-          // cout << "Round #" << round << ": charlie shot by aaron" << endl;
-      }
       else if (bobAlive)
-      {
-        // cout << "aaron is shooting at bob: ";
         shoot(bobAlive, aaronAcc);
-        // if (!bobAlive)
-          // cout << "Round #" << round << ": bob shot by aaron" << endl;
-      }
-    }
     
     if (bobAlive)
-    {
       if (charlieAlive)
-      {
-        // cout << "bob is shooting at charlie: ";
         shoot(charlieAlive, bobAcc);
-        // if (!charlieAlive)
-          // cout << "Round #" << round << ": charlie shot by bob" << endl;
-      }
       else if (aaronAlive)
-      {
-        // cout << "bob is shooting at aaron: ";
         shoot(aaronAlive, bobAcc);
-        // if (!aaronAlive)
-          // cout << "Round #" << round << ": aaron shot by bob" << endl;
-      }
-    }
+    
+    if (charlieAlive)
+      if (bobAlive)
+        shoot(bobAlive, charlieAcc);
+      else if (aaronAlive)
+        shoot(aaronAlive, charlieAcc);
+
+    ++round;
+  }
+}
+
+int startDuel(bool& aaronAlive, bool& bobAlive, bool& charlieAlive)
+{
+  float aaronAcc = 1.0f/3, bobAcc = 0.5f, charlieAcc = 1.0f;
+  
+  while (!(
+           (aaronAlive&& !bobAlive&& !charlieAlive) ||
+           (!aaronAlive&& bobAlive&& !charlieAlive) ||
+           (!aaronAlive&& !bobAlive&& charlieAlive)
+          ))
+  {
+    if (aaronAlive)
+      if (charlieAlive)
+        shoot(charlieAlive, aaronAcc);
+      else if (bobAlive)
+        shoot(bobAlive, aaronAcc);
+    
+    if (bobAlive)
+      if (charlieAlive)
+        shoot(charlieAlive, bobAcc);
+      else if (aaronAlive)
+        shoot(aaronAlive, bobAcc);
       
     if (charlieAlive)
-    {
       if (bobAlive)
-      {
-        // cout << "charlie is shooting at bob: ";
         shoot(bobAlive, charlieAcc);
-        // if (!bobAlive)
-          // cout << "Round #" << round << ": bob shot by charlie" << endl;
-      }
       else if (aaronAlive)
-      {
-        // cout << "charlie is shooting at aaron: ";
         shoot(aaronAlive, charlieAcc);
-        // if (!aaronAlive)
-          // cout << "Round #" << round << ": aaron shot by charlie" << endl;
-      }
-    }
-      
-    // ++round;
   }
 }
 
 
 void shoot(bool& targetAlive, double accuracy)
 {
-  /* 
-  //split up to allow debug output
-  float temp = (rand() / static_cast<float>(RAND_MAX));
-  cout << "random=" << temp << " vs. " << accuracy << endl;
-  if (temp <= accuracy)
-    targetAlive = false;
-  */
   if ((rand() / static_cast<float>(RAND_MAX)) <= accuracy)
     targetAlive = false;
 }
