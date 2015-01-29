@@ -51,9 +51,9 @@ int main(int argc, char** argv)
     getInput("Please input a number of cents from 0 to 99: ", moneyTotal, 0, 99);
     moneyRemaining = moneyTotal;
     
-    computeCoins(25, numQuar, moneyRemaining);
-    computeCoins(10, numDimes, moneyRemaining);
-    computeCoins(1, numPennies, moneyRemaining);
+    compute_coins(25, numQuar, moneyRemaining);
+    compute_coins(10, numDimes, moneyRemaining);
+    compute_coins(1, numPennies, moneyRemaining);
     
     if (moneyTotal != 0)
       cout << "Error in the algorithm: money did not end up at 0 cents." << endl;

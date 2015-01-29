@@ -3,7 +3,7 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on January 25, 2015, 11:01 PM
-    Purpose: Determine change from between 1 and 9 cents
+    Purpose: Determine change from between 1 and 99 cents
  */
 
 //System Libraries
