@@ -144,7 +144,7 @@ int getDayOfWeek(int month, int day, int year)
 //isLeapYear: returns true if a year is a leap year
 bool isLeapYear(int year)
 {
-  return ((year % 400) == 0 || ((year % 4 == 0) && (year % 100 != 100)));
+  return ((year % 400) == 0 || ((year % 4 == 0) && (year % 100 != 0)));
 }
 
 //getCenturyValue: return a value for the century from the formula: (3 - ((year / 100) % 4)) * 2

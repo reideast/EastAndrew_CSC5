@@ -83,7 +83,7 @@ float windchill(float v, float t)
   {
     //typo fixed from book, according to wikipedia, the expoennt of both V terms should be 0.16
     float v_term = pow(v, 0.16); //only calculate expensive POW function once
-    return 13.12f + 0.6215 * t - 11.37 * v_term + 0.3965 * t * pow(v, 0.016);
+    return 13.12f + 0.6215 * t - 11.37 * v_term + 0.3965 * t * v_term;
   }
 }
 

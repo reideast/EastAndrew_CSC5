@@ -3,7 +3,7 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on January 26, 2015, 11:16 PM
-    Purpose: Compute basal metabolic rate in terms of calories in a type of food, using person's weight
+    Purpose: Windchill index calculator
  */
 
 //System Libraries

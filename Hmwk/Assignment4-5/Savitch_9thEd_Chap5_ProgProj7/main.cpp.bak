@@ -133,10 +133,11 @@ int getDayOfWeek(int month, int day, int year)
 {
   if (month < 1 || month > 12) return -1;
   if (day < 1 || day > 31) return -1;
-  cout << "day: " << day << endl;
-  cout << "getMonthValue(" << month << ", " << year << "): " << getMonthValue(month, year) << endl;
-  cout << "getYearValue(" << year << "): " << getYearValue(year) << endl;
-  cout << "getCenturyValue(" << year << "): " << getCenturyValue(year) << endl;
+  //DEBUG: since function is return wrong number. used this to narrow it down to my getMonthValue function, and then fixed that.
+  // cout << "day: " << day << endl;
+  // cout << "getMonthValue(" << month << ", " << year << "): " << getMonthValue(month, year) << endl;
+  // cout << "getYearValue(" << year << "): " << getYearValue(year) << endl;
+  // cout << "getCenturyValue(" << year << "): " << getCenturyValue(year) << endl;
   return (day + getMonthValue(month, year) + getYearValue(year) + getCenturyValue(year)) % 7;
 }
 
