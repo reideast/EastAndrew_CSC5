@@ -37,3 +37,27 @@ Time: 20 sec.               |                                              |
                             |                                              |
                             |                     |-|                      |
                             |----------------------------------------------|
+                            
+How about a drawScreen "horizontally"
+Rocket is launched Left to right:
+launchpad ................................... space
+|         ==>                                   |
+
+That way, the screen doesn't have to be cleared for each frame  of animation, and will look like a curved line graph of height
+| ==>                                           | t: 1, h: 0'
+|  ==>                                          | t: 2, h: 100'
+|     ==>                                       | t: 3, h: 250'
+|          ==>                                  | t: ...
+|                 ==>                           |
+|                           ==>                 |
+|                                ==>            |
+|                                   ==>         |
+|                                      ==>      |
+|                                        ==>    |
+|                                         ==>   |
+|                                         ==>   |
+|                                        ==>    |
+|                                     ==>       |
+|                                  ==>          |
+
+etc...
