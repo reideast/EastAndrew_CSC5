@@ -11,9 +11,11 @@ time of thrust in seconds
 -> calculate fuel weight
     -changes over time as fuel is burnt up? (formula?)
 maybe change type of engine? liquid, solid, boosters, sci-fi (ion, nuclear (Fallout reference))
+easy vs hard: asteroid, moon, earth (add non-negligible atmosphere)
 
 Calculation:
 Height as function of time & thrust & fuel
+http://exploration.grc.nasa.gov/education/rocket/rktpow.html
 
 Draw Screen:
 how to CLS a C++ terminal?? to make frames

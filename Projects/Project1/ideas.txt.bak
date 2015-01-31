@@ -14,6 +14,7 @@ maybe change type of engine? liquid, solid, boosters, sci-fi (ion, nuclear (Fall
 
 Calculation:
 Height as function of time & thrust & fuel
+http://exploration.grc.nasa.gov/education/rocket/rktpow.html
 
 Draw Screen:
 how to CLS a C++ terminal?? to make frames
@@ -40,8 +41,10 @@ Time: 20 sec.               |                                              |
                             
 How about a drawScreen "horizontally"
 Rocket is launched Left to right:
+launchpad ................................... space
 |         ==>                                   |
-That way, the screen doesn't have to be cleared for each stage of animation, and will look like a curved line graph of height
+
+That way, the screen doesn't have to be cleared for each frame  of animation, and will look like a curved line graph of height
 | ==>                                           | t: 1, h: 0'
 |  ==>                                          | t: 2, h: 100'
 |     ==>                                       | t: 3, h: 250'
@@ -57,4 +60,5 @@ That way, the screen doesn't have to be cleared for each stage of animation, and
 |                                        ==>    |
 |                                     ==>       |
 |                                  ==>          |
+
 etc...
