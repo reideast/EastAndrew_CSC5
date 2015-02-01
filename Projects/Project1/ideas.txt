@@ -16,6 +16,87 @@ easy vs hard: asteroid, moon, earth (add non-negligible atmosphere)
 Calculation:
 Height as function of time & thrust & fuel
 http://exploration.grc.nasa.gov/education/rocket/rktpow.html
+http://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
+http://en.wikipedia.org/wiki/Single-stage-to-orbit
+
+http://en.wikipedia.org/wiki/Specific_impulse
+Specific impulse (usually abbreviated Isp) is a measure of the efficiency of rocket and jet engines. It represents the force with respect to the amount of propellant used per unit time.[1] If the "amount" of propellant is given in terms of mass (such as in kilograms), then specific impulse has units of velocity. 
+
+http://daisleyphysics.com/rockets/Calculating%20the%20height%20your%20rocket%20will%20reach.pdf
+
+http://exploration.grc.nasa.gov/education/rocket/rktpow.html
+or
+http://en.wikipedia.org/wiki/Tsiolkovsky_rocket_equation
+delta u = Veq * ln(MR) - g0 * tb
+delta v = Velocity_equivalentExitVelocityOfNozzle * ln(massFull / massEmpty) - g0 * time_burn
+(Veq = Isp * g0)
+
+unit check:
+g0 = 9.8 m/s^2
+Isp in seconds
+Veq = s * 9.8 m/s^2 = m/s
+ln(MR) no units
+g0 * time_burn = m/s^2 * s = m/s
+delta v = m/s
+
+http://en.wikipedia.org/wiki/Saturn_V
+Total Mass (??): 2,970,000 kg
+Payload to LEO: 118,000 kg
+
+First Stage (fuel RP-1/LOX):
+specific impulse: 263 seconds, or 2.58 km/s
+burn time: 165 s
+empty mass: 130,000 kg
+gross mass: 2,290,000 kg
+
+Second Stage (LH2/LOX): 
+421 s, 4.13 km/s
+360 s
+empty mass: 40,100 kg
+gross mass: 496,200 kg
+
+Third Stage (LH2/LOX):
+421 s, 4.13 km/s
+165 s + 335 s (2 burns)
+empty mass: 13,500 kg
+gross mass: 123,000 kg
+
+mdot for saturn V first stage: 15,000 e4
+
+Orbital Heights:
+LEO: 160 km to 2000 km
+ISS: 340 km
+Hubble: 595 km
+
+
+
+
+http://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/node103.html
+assumptions:
+  single stage sounding rocket with
+  no drag
+  constant gravity
+  constant rate of burn
+  
+
+height_at_end_of_burnout = 
+g *( -time_burnout * Isp * (ln(m_vo / m_v,final)) / ((m_v0 / m_v,final) - 1) + t_b * Isp - 1/2 * t_b^2)
+
+height_at_end_of_burnout + ballistic distance = height_final
+
+m_v0 = initial mass of vehicle
+m_v,final = final mass of vehicle
+
+
+The Rocket Equation, simplified, and the integrated in respect to time ==
+u = g * (Isp * ln(m_v0 / m_v) - t)
+
+mass of the rocket that varies over time:
+m_v(t) = m_v0 - (m_v0 - m_v,final) * (t / t_b)
+
+
+
+
 
 Draw Screen:
 how to CLS a C++ terminal?? to make frames
