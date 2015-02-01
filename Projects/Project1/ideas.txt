@@ -4,6 +4,9 @@ guess how much thrust you need to launch a rocket up out of the atmosphere
 challenge because more thrust realistically adds more fuel weight (there's a formula for this, right?)
 three difficulty levels: just the rocket, small payload, and heavy payload
 
+Easy time of burn
+Med or hard amt of fuel and thrust 
+
 Inputs:
 thrust
 -constant vs. variable??
@@ -96,8 +99,48 @@ u = g * (Isp * ln(m_v0 / m_v) - t)
 mass of the rocket that varies over time:
 m_v(t) = m_v0 - (m_v0 - m_v,final) * (t / t_b)
 
+http://en.wikipedia.org/wiki/Specific_impulse
+Isp vs. v_e (velocity exhaust - average exhaust speed along axis of engine in m/s)
+Isp = v_e / g
+v_e = Isp*g
+
+http://en.wikipedia.org/wiki/Rocket_engine_nozzle
+F (N) = mdot (kg/s) * v_e (m/s)
+for Saturn V 1st stage,
+F = Thrust = 34020 kN = 34020000 N
+v_e = Isp * g = 2579.148 m/s
+mdot = 13190.40 kg/s
+
+unit check:
+N = (kg*m/s^2) / m/s = kg/s
+
+mdot * 165 s (t_burn) = 2176416.397973284 kg fuel used ??
+2176416. 
+2100000 from wiki 
+yes
+
+Isp = F / (Mdot * g)
 
 
+
+input: F_thrust ?? or v_e
+input: time_burn
+
+what needs to be defined by the rocket type, and what is derived from the inputs?
+mass_empty is defined
+  Isp comes from F and mdot or v_e, so it's derived?
+  where does the engine's use of fuel come from? F is mdot and v_e
+  if I let v_e be defined (ie, the engine always ejects exhaust at the same speed) then more F means higher mdot
+  ie. input higher force, fuel burns faster
+  if I let mdot be defined (the amount of fuel flow is always the same), then higher F means higher v_e
+  which makes less sense to me
+v_e is defined
+  Isp = v_e / g, so Isp is also pre-defined?
+mdot = F / v_e
+max_fuel = mdot * time_burn
+fuel_remaining(t): max_fuel - mdot*t
+
+output: height
 
 
 Draw Screen:
