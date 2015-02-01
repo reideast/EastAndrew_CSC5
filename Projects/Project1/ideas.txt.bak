@@ -48,6 +48,7 @@ specific impulse: 263 seconds, or 2.58 km/s
 burn time: 165 s
 empty mass: 130,000 kg
 gross mass: 2,290,000 kg
+The first stage burned for about 2 minutes and 41 seconds, lifting the rocket to an altitude of 42 miles (68 km) and a speed of 6,164 miles per hour (2,756 m/s) and burning 4,700,000 pounds (2,100,000 kg) of propellant.[32]
 
 Second Stage (LH2/LOX): 
 421 s, 4.13 km/s
@@ -72,12 +73,27 @@ Hubble: 595 km
 
 
 http://web.mit.edu/16.unified/www/FALL/thermodynamics/notes/node103.html
-height at burnout (single stage sounding rocket with no drag and constant gravity)
+assumptions:
+  single stage sounding rocket with
+  no drag
+  constant gravity
+  constant rate of burn
+  
 
 height_at_end_of_burnout = 
-g * -time_burnout * Isp * (ln(m_vo / m_v,final)) / ((m_v0 / m_v,final) - 1) + t_b * Isp - 1/2 * t_b^2
+g *( -time_burnout * Isp * (ln(m_vo / m_v,final)) / ((m_v0 / m_v,final) - 1) + t_b * Isp - 1/2 * t_b^2)
+
+height_at_end_of_burnout + ballistic distance = height_final
+
+m_v0 = initial mass of vehicle
+m_v,final = final mass of vehicle
 
 
+The Rocket Equation, simplified, and the integrated in respect to time ==
+u = g * (Isp * ln(m_v0 / m_v) - t)
+
+mass of the rocket that varies over time:
+m_v(t) = m_v0 - (m_v0 - m_v,final) * (t / t_b)
 
 
 

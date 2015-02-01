@@ -88,7 +88,7 @@ int main(int argc, char** argv)
   velocity_at_end_of_burnout = g * (Isp * log(m_v0 / curr_mass_vehicle) - t);
   cout << "velocity_at_end_of_burnout: " << velocity_at_end_of_burnout << " m/s" << endl;
   
-  float delta_u = Isp * g * log(m_v0/m_vfinal) - g*t_b;
+  float delta_u = Isp * g * log(m_v0/m_vfinal) - g*t_b
   cout << "delta_u: " << delta_u << " m/s" << endl;
   
   height_at_end_of_burnout = g * ( -t_b * Isp * ((log(m_v0 / m_vfinal)) / ((m_v0 / m_vfinal) - 1)) + t_b * Isp - 1/2 * t_b * t_b);
