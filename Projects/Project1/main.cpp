@@ -3,161 +3,327 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on January 13, 2015, 6:04 PM
-    Purpose: test writing to a screen and animate it
+    Purpose: Play a game where you try to launch a rocket to space by guessing force exerted by the engine and length of time to burn the engine
  */
 
 //System Libraries
 #include <iostream>
-#include <cmath>
-#include <cstdlib>
-
 #include <iomanip>
-#include <string>
+#include <cmath>
 
-//for sleeping. referece: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-//chrono needs C++11. In NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
+//<chrono> for simulation time keeping and <thread> for animation sleeping. I referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
+//chrono needs C++11. To configure g++ in NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
 #include <chrono>
 #include <thread>
-
 using namespace std;
 
-//User Libraries
 
 //Global Constants
-const float g = 9.80665; // m/s^2 g_0 at sea level
+//Physics Constants
+const float g = 9.80665; // m/s^2 - g_0 at sea level
 
-//should these be global, or passed to function??
-// const int ANIMATION_RATE = 50; //miliseconds
-// const int TIME_FACTOR = 4; //speed up simulation time by * 4 to make the game progress faster
-const int TIME_FACTOR = 20;
-// const int ANIMATION_RATE = 25; //miliseconds
-const int ANIMATION_RATE = 50; //miliseconds
+//Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
+const int ANIMATION_RATE = 50; //in milliseconds
+// const int TIME_FACTOR = 20; //speed up simulation time by * 20 to make the game feel less sluggish
+const int TIME_FACTOR = 100; //speed up simulation time by * 20 to make the game feel less sluggish
 
-const int WINDOW_COLUMNS = 80;
-const int WINDOW_ROWS = 25;
 
 //Function Prototypes
-bool writeScreen(int x, int y); //write a screen with a '*' at (x, y)
-void testWriteScreen();
 
-void cls(); //clear the screen by writing 100 new lines
+//runGame: Run an entire round of the game, taking inputs from <iostream> until user is successful
+void runGame(short difficulty);
+//preconditions:
+//  choice is a valid difficulty: 1, 2, or 3
 
-float velocityDuringBurn(float t, float Isp, float m_v0, float mdot);
-float altitudeDuringBurn(float t, float Isp, float m_v0, float m_curr);
-float fuelRemaining(float t, float m_fuel, float mdot);
+bool runSimulation(float F_thrust, float time_burn, float Isp, float m_v_empty, float targetAltitude, bool hardMode, float targetVelocityThreshold = 100);
+//preconditions:
 
-bool calcNow(float& curr_alt, float t, float Isp, float t_b, float m_v0, float mdot, float targetAltitude);
+// targetVelocityThreshold (100 m/s)
 
+//oneFrameCalculateAndDisplay: make all physics calculations at time t and display to <iostream>
+bool oneFrameCalculateAndDisplay(float& currentAltitude, float& currentVelocity, float t, float Isp, float time_burn, float m_v0, float mdot, float targetAltitude);
+//preconditions:
+//  currentAltitude, currentAltitude - initialized variables to hold calculated values
+//  t (seconds) - time passed since launch. all calculations will be based around this
+//  Isp (seconds) - specific impulse in seconds
+//  time_burn (seconds) - how long the rocket will run its engines for
+//  m_v0 (kg) - mass of vehicle at time 0, still full of fuel
+//  mdot (kg/s) - flow rate of fuel, how much fuel is burned per second
+//  targetAltitude (m) - altitude where a rocket launch will "win"
+//postconditions:
+//  returns true if the rocket has either reached the targetAltitude or crashed back to zero altitude
+//  sets currentAltitude (m) to where the rocket is calculated at time t
+//  sets currentVelocity (m/s) to velocity of rocket at time t
+
+//drawRocket: draw the position of a rocket from 0 to ceiling, and fit within cols characters wide
 void drawRocket(float y, float ceiling, unsigned short cols = 80);
+//preconditions:
+//  y and ceiling are positive
+
+
+//Physics Calculations:
+//altitudeDuringBurn: get altitude at any time t during the rocket engine
+float altitudeDuringBurn(float t, float Isp, float m_v0, float m_curr);
+//velocityDuringBurn: get velocity at any time t during the burn
+float velocityDuringBurn(float t, float Isp, float m_v0, float mdot);
+//ballisticAltitude: get altitude of any object with no forces applied besides gravity at time t
+float ballisticAltitude(float t, float v_0, float y_0);
+//ballisticVelocity: get velocity of any object with no forces applied besides gravity at time t
+float ballisticVelocity(float t, float v_0);
+
 
 //Execution Begins Here
 int main(int argc, char** argv)
 {
   cout << fixed << setprecision(2);
-  //testWriteScreen();
   
-  // float v_e = 2579.148; // velocity of exhaust in m/s
-  // float m_fuel = 2100000; //from stage 1 info
-  // float t_b = 165; //the saturn 5 rocket stage 1 burns for 165 s
-
-  // float curr_mass_vehicle = 0.0f;
-  // float curr_velocity = 0.0f;
-  // float curr_height = 0.0f;
+  cout << "**********************************************************" << endl;
+  cout << "**                                                      **" << endl;
+  cout << "**\\   Welcome to the Rocket Launch Simulation Game!     **" << endl;
+  cout << "***\\                                                 *  **" << endl;
+  cout << "****\\                                          *        **" << endl;
+  cout << "****)                                              *    **" << endl;
+  cout << "****|)    ----    ---   --  -  -   >=~        *      *  **" << endl;
+  cout << "****)                                             *     **" << endl;
+  cout << "**********************************************************" << endl;
+  cout << endl;
   
-  float height_at_end_of_burnout = 0.0f; //will be in m
-  float velocity_at_end_of_burnout = 0.0f; //will be in m/s
-  
-  //properties of game:
-  // float targetAltitude = 200000; // m
-  float targetAltitude = 300000; // m
-  
-  //values defined for stage 1 of Saturn V rocket
-  float Isp = 263; // 263 seconds = specific impulse
-  float v_e = Isp * g;
-  float m_v_empty = 870000; //total mass for rocket - stage 1 fuel
-  
-  //inputs:
-  float F_thrust = 0.0f;
-  float time_burn = 0.0f;
-  
-  F_thrust = 34020000;
-  time_burn = 165;
-  
-  //derive properties from inputs:
-  float mdot = F_thrust / (Isp * g); //substitution from: mdot = F_thrust / v_e;
-  float m_fuel = mdot * time_burn;
-  float m_v0 = m_v_empty + m_fuel;
-  
-/*   // chrono::milliseconds ms = chrono::duration_cast< chrono::milliseconds >(chrono::high_resolution_clock::now().time_since_epoch());
-  chrono::steady_clock::time_point t1 = chrono::steady_clock::now();
-  for (int i = 1; i < 100000; ++i) cout << "*";
-  chrono::steady_clock::time_point t2 = chrono::steady_clock::now();
-  for (int i = 1; i < 100000; ++i) cout << "*";
-  chrono::steady_clock::time_point t3 = chrono::steady_clock::now();
-  for (int i = 1; i < 100000; ++i) cout << "*";
-  chrono::steady_clock::time_point t4 = chrono::steady_clock::now();
-  // chrono::duration<long, chrono::milliseconds> time_span = chrono::duration_cast<chrono::duration<long, chrono::milliseconds>>(t2 - t1);
-  chrono::duration<float> diff;
-  diff = t2-t1;
-  chrono::milliseconds first = chrono::duration_cast<chrono::milliseconds>(diff);
-  chrono::milliseconds second = chrono::duration_cast<chrono::milliseconds>(t3-t2);
-  chrono::milliseconds third = chrono::duration_cast<chrono::milliseconds>(t4-t3);
-  chrono::milliseconds all = chrono::duration_cast<chrono::milliseconds>(t3-t1);
-  cout << diff.count() << " " << first.count() << " + " << second.count() << " + " << third.count() << " = " << all.count() << endl; */
-  
-  // float m_vfinal = m_v_empty;
-  
-  // int startTime = time(0);
-  chrono::steady_clock::time_point startTime = chrono::steady_clock::now();
-  // cout << "startTime=" << startTime << endl;
-  float t_really = (chrono::duration<float>(chrono::steady_clock::now() - startTime)).count();
-  cout << "t_really=" << t_really << endl;
-
-  float t = t_really * TIME_FACTOR;
-  float currAltitude = 0.0f;
-  // while (t <= time_burn)
-  while (calcNow(currAltitude, t, Isp, time_burn, m_v0, mdot, targetAltitude))
+  short menuChoice = 0;
+  do
   {
-    //wait for ANIMATION_RATE to establish proper frame rate
-    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-
-    t_really = (chrono::duration<float>(chrono::steady_clock::now() - startTime)).count();
-    t = t_really * TIME_FACTOR;
-  }
+    menuChoice = 0;
+    cout << "What difficulty would you like to play at?" << endl
+         << " 1. Easy (one variable)" << endl
+         << " 2. Medium (two variables)" << endl
+         << " 3. Hard (two variables and must approach the station at low velocity)" << endl
+         << " 4. Exit program" << endl;
+    do
+    {
+      if (menuChoice != 0) cout << "Please enter 1, 2, 3, or 4: ";
+      cin >> menuChoice;
+    } while (menuChoice < 1 || menuChoice > 4);
+    cout << endl;
+    if (menuChoice != 4)
+      runGame(menuChoice);
+  } while (menuChoice != 4);
   
-  if (currAltitude > targetAltitude)
-  {
-    cout << "You have made it to the target altitude. Space, ahoy!" << endl;
-  }
-  else if (currAltitude < 0)
-  {
-    cout << "You have crashed! Phooey..." << endl;
-  }
-  else
-  {
-    cout << "The rocket stopped somewhere hovering above the launch pad."
-         << "This is a bug in either the game or physics itself."
-         << "Please report this but to the programmer or NASA, appropriately." << endl;
-  }
+  cout << "Thanks for playing!" << endl;
   
   return 0;
 }
 
 
 
-
-float fuelRemaining(float t, float m_fuel, float mdot)
+void runGame(short difficulty)
 {
+  //340 km for the ISS:
+  float targetAltitude = 340000;
   
+  //rocket parameters (based on the Saturn V first stage):
+  // float Isp = 263; // specific impulse of Saturn V first stage = 263 seconds. The Saturn V first stage cannot reach the ISS.
+  float Isp = 363; // Modified efficiency of engine to be closer to the space shuttle main engine (366 seconds)
+  float m_v_empty = 870000; //total mass for rocket and payload minus stage 1 fuel
+  
+  short countAttempts = 0;
+  bool hardMode = false;
+    
+  if (difficulty == 1)
+  {
+    cout << "You are launching a large single-stage rocket to the International Space Station" << endl
+         << "in low Earth orbit, " << (targetAltitude / 1000) << " km. The scientists have already determined the" << endl
+         << "optimum thrust for the engine. You must figure out how long to burn the engine." << endl
+         << "Longer burn will add weight to the rocket from fuel. Good luck!" << endl;
+    
+    //run simulation
+    float F_thrust = 3.402e7; //actual thrust of the Saturn V first stage in Newtons
+    float time_burn = 0.0f;
+    
+    //get input and loop through simulation until user is successful
+    do
+    {
+      do
+      {
+        cout << endl;
+        if (countAttempts > 0)
+          cout << "Your last unsuccessful burn time was " << time_burn << " s." << endl;
+        cout << "Please input the burn time (in seconds): ";
+        cin >> time_burn;
+      } while (time_burn < 0);
+      ++countAttempts;
+      cout << endl;
+    } while (runSimulation(F_thrust, time_burn, Isp, m_v_empty, targetAltitude, hardMode));
+  }
+  else if (difficulty == 2 || difficulty == 3)
+  {
+    
+    cout << "You are launching a large single-stage rocket to the International Space Station" << endl
+         << "in low Earth orbit, " << (targetAltitude / 1000) << " km. You must figure out the force from the engine and" << endl
+         << "how long to burn the engine. Larger thrust and longer burn will add weight to" << endl
+         << "the rocket from fuel.";
+    
+    float targetVelocityThreshold = 100; //for hard mode
+    if (difficulty == 3)
+    {
+      cout << " And, you must reach the space station traveling" << endl
+           << "slower than " << (targetVelocityThreshold) << " m/s to dock, or you will shoot off into space. Tricky!" << endl;
+      hardMode = true;
+    }
+    else
+      cout << " Good luck!" << endl;
+    
+    //run simulation
+    float F_thrust = 0.0f;
+    float time_burn = 0.0f;
+    
+    //get input and loop through simulation until user is successful
+    do
+    {
+      do
+      {
+        cout << endl;
+        if (countAttempts > 0)
+          cout << "Your last unsuccessful burn time was " << time_burn << " s." << endl;
+        cout << "Please input the burn time (in seconds): ";
+        cin >> time_burn;
+      } while (time_burn < 0);
+      do
+      {
+        cout << endl;
+        if (countAttempts > 0)
+          cout << "Your last unsuccessful engine thrust was " << (F_thrust) << " kN." << endl;
+        cout << "Please input the force of the engine thrust (in kN): ";
+        cin >> F_thrust;
+      } while (F_thrust < 0);
+      ++countAttempts;
+      cout << endl;
+    } while (runSimulation(F_thrust * 1000, time_burn, Isp, m_v_empty, targetAltitude, hardMode));
+  }
+  else
+  {
+    cout << "Invalid difficulty for game: " << difficulty << endl;
+    return;
+  }
+  
+  cout << "You were successful in " << countAttempts << " tries." << endl << endl << endl;
 }
+
+
+bool runSimulation(float F_thrust, float time_burn, float Isp, float m_v_empty, float targetAltitude, bool hardMode, float targetVelocityThreshold)
+{
+  //derive properties from inputs:
+  float mdot = F_thrust / (Isp * g); //substitution from: mdot = F_thrust / v_e;
+  float m_fuel = mdot * time_burn;
+  float m_v0 = m_v_empty + m_fuel;
+  
+  float currAltitude = 0.0f;
+  float maxAltitude = 0.0f;
+  float currVelocity = 0.0f;
+
+  //run simulation
+  chrono::steady_clock::time_point startTime = chrono::steady_clock::now(); //C++11 time keeping. referenced: http://www.cplusplus.com/reference/chrono/duration/
+  float t = (chrono::duration<float>(chrono::steady_clock::now() - startTime)).count() * TIME_FACTOR; //actual time adjusted by TIME_FACTOR to speed up simulation
+  
+  //run one stage of the animation, which returns false if the simulation has completed
+  while (oneFrameCalculateAndDisplay(currAltitude, currVelocity, t, Isp, time_burn, m_v0, mdot, targetAltitude))
+  {
+    if (currAltitude > maxAltitude)
+      maxAltitude = currAltitude;
+    //wait for ANIMATION_RATE to establish proper frame rate
+    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
+
+    //adjust t by actual time elapsed by computer clock
+    t = (chrono::duration<float>(chrono::steady_clock::now() - startTime)).count() * TIME_FACTOR;
+  }
+  if (currAltitude > maxAltitude)
+    maxAltitude = currAltitude;
+  
+  //simulation is done and resultant parameters have been returned
+  //check parameters vs. win conditions
+  if (currAltitude > targetAltitude) //reached space
+  {
+    cout << "You have made it to the target altitude.";
+    if (hardMode && currVelocity <= targetVelocityThreshold)
+    {
+      cout << endl << "And you're going slow enough to dock! Welcome to the space station!" << endl;
+      return false;
+    }
+    else if (hardMode)
+    {
+      cout << endl << "But you were going too fast and overshot your target! Deep space is lonely..." << endl;
+      return true;
+    }
+    else //not hardMode
+    {
+      cout << " Space, ahoy!" << endl;
+      return false;
+    }
+  }
+  else if (currAltitude < 0) //crashed back to the launch pad
+  {
+    if (abs(currVelocity) <= targetVelocityThreshold)
+      cout << "Your rocket is not exerting enough force to overcome its mass to lift off." << endl;
+    else
+      cout << "You have crashed! Phooey..." << endl;
+    cout << "The highest altitude your rocket reached was " << (maxAltitude / 1000) << " km." << endl;
+    return true;
+  }
+  else //(simulation calculators really shouldn't return this)
+  {
+    cout << "The rocket stopped somewhere hovering above the launch pad."
+         << "This is a bug in either the game or physics itself."
+         << "Please report this problem to the programmer or NASA, appropriately." << endl;
+    return true;
+  }
+}
+
+
+
+bool oneFrameCalculateAndDisplay(float& currentAltitude, float& currentVelocity, float t, float Isp, float time_burn, float m_v0, float mdot, float targetAltitude)
+{
+  float current_mass_vehicle = 0.0f;
+  float currentFuel = 0.0f;
+  // changed to by-reference variable: float currentVelocity = 0.0f;
+  // changed to by-reference variable: float currentAltitude = 0.0f;
+  
+  if (t <= time_burn) //during burn
+  {
+    current_mass_vehicle = m_v0 - mdot * t;
+    currentFuel = (time_burn * mdot) - (t * mdot); //max - current
+    currentAltitude = altitudeDuringBurn(t, Isp, m_v0, current_mass_vehicle);
+    currentVelocity = velocityDuringBurn(t, Isp, m_v0, mdot);
+  }
+  else //after burn, add in ballistic flight
+  {
+    current_mass_vehicle = m_v0 - mdot * time_burn;
+    float altAtEndOfBurn = altitudeDuringBurn(time_burn, Isp, m_v0, current_mass_vehicle);
+    float velocityAtEndOfBurn = velocityDuringBurn(time_burn, Isp, m_v0, mdot);
+    currentVelocity = ballisticVelocity((t - time_burn), velocityAtEndOfBurn);
+    currentAltitude = ballisticAltitude((t - time_burn), velocityAtEndOfBurn, altAtEndOfBurn);
+  }
+  
+  cout << setw(7) << t << " sec" << ", ";
+  cout << "Altitude: " << setw(6) << (currentAltitude / 1000) << " km, ";
+  cout << "Velocity: " << setw(8) << currentVelocity << " m/s" << ", ";
+  cout << ((currentFuel > 0) ? "Fuel Remaining: " : "BURN COMPLETED: ") << setw(5) << (currentFuel / (mdot * time_burn) * 100) << "%" << endl;
+  
+  drawRocket(currentAltitude, targetAltitude);
+  
+  cout << endl;
+  
+  if (currentAltitude > targetAltitude || currentAltitude < 0)
+    return false;
+  else
+    return true;
+}
+
 float velocityDuringBurn(float t, float Isp, float m_v0, float mdot)
 {
   return g * (Isp * log(m_v0 / (m_v0 - mdot * t)) - t);
 }
 float altitudeDuringBurn(float t, float Isp, float m_v0, float m_curr)
 {
-  // return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 0.5 * t * t);
-  return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 1/2.0f * t * t);
+  return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 0.5 * t * t);
+  // return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 1/2.0f * t * t);
 }
 float ballisticAltitude(float t, float v_0, float y_0)
 {
@@ -168,76 +334,37 @@ float ballisticVelocity(float t, float v_0)
   return v_0 - t * g; //unit check: m/s - s * m/s^2
 }
 
-bool calcNow(float& curr_alt, float t, float Isp, float t_b, float m_v0, float mdot, float targetAltitude)
-{
-  float curr_mass_vehicle = 0.0f;
-  float curr_velocity = 0.0f;
-  // float curr_alt = 0.0f;
-  float curr_fuel = 0.0f;
-  
-  float v_e = Isp * g;
-  // float Isp = v_e / g;
-  
-  if (t <= t_b) //during burn
-  {
-    curr_mass_vehicle = m_v0 - mdot * t;
-    curr_fuel = (t_b * mdot) - (t * mdot); //max - current
-    curr_alt = altitudeDuringBurn(t, Isp, m_v0, curr_mass_vehicle);
-    curr_velocity = velocityDuringBurn(t, Isp, m_v0, mdot);
-  }
-  else //after burn
-  {
-    curr_mass_vehicle = m_v0 - mdot * t_b;
-    float altAtEndOfBurn = altitudeDuringBurn(t_b, Isp, m_v0, curr_mass_vehicle);
-    float velocityAtEndOfBurn = velocityDuringBurn(t_b, Isp, m_v0, mdot);
-    curr_velocity = ballisticVelocity((t - t_b), velocityAtEndOfBurn);
-    curr_alt = ballisticAltitude((t - t_b), velocityAtEndOfBurn, altAtEndOfBurn);
-  }
-  
-  cout << setw(7) << t << " sec" << ", ";
-  cout << "Altitude: " << setw(6) << (curr_alt / 1000) << " km, ";
-  cout << "Velocity: " << setw(8) << curr_velocity << " m/s" << ", ";
-  cout << ((curr_fuel > 0) ? "Fuel Remaining: " : "BURN COMPLETED: ") << setw(5) << (curr_fuel / (mdot * t_b) * 100) << "%" << endl;
-  
-  drawRocket(curr_alt, targetAltitude);
-  
-  cout << endl;
-  
-  if (curr_alt > targetAltitude || curr_alt < 0)
-    return false;
-  else
-    return true;
-}
 
 void drawRocket(float y, float ceiling, unsigned short cols)
 {
-/*
-80 columns:
->                                                                              |
-|>                                                                             |
-| >                                                                            |
-|                                                                            > |
-|                                                                             >|
-|                                                                              >
-*/
   unsigned short i;
   
   //draw a line before:
   // for (i = 1; i <= cols; ++i)
     // cout << "-";
   // cout << endl;
+  
+  //a "crashed" rocket will be drawn on the launchpad
+  if (y < 0)
+  {
+    y = 0;
+  }
 
-  if (y > ceiling) //if progressed to the goal, just draw the ">" at the ending goal mark
+  if (ceiling < 0)
+  {
+    cout << "Cannot draw rocket. Target altitude cannot be negative." << endl;
+  }
+  else if (y > ceiling) //if progressed to the goal, just draw the ">" at the ending goal mark
   {
     cout << "|";
-    for (i = 1; i <= (cols - 2); ++i)
+    for (i = 1; i <= (cols - 4); ++i)
       cout << " ";
-    cout << ">";
+    cout << ">=~";
     cout << endl;
   }
   else
   {
-    unsigned short spacesProgressed = ((y / ceiling) * (cols - 1)); // y percent of ceiling * number of characters total (minus 1 for final char)
+    unsigned short spacesProgressed = ((y / ceiling) * (cols - 3)); // y percent of ceiling * number of characters total (minus 1 for final char)
     
     if (spacesProgressed != 0)
     {
@@ -247,11 +374,11 @@ void drawRocket(float y, float ceiling, unsigned short cols)
       // cout << "i="<< i;
     }
     
-    cout << ">";
+    cout << ">=~";
     
     // cout << "i="<< (cols - 2);
     // int count = 0;
-    for (i = (cols - 2); i > spacesProgressed; --i)
+    for (i = (cols - 4); i > spacesProgressed; --i)
     {
       cout << " ";
       // ++count;
@@ -266,61 +393,6 @@ void drawRocket(float y, float ceiling, unsigned short cols)
   
   //draw a line after
   for (i = 1; i <= cols; ++i)
-    cout << "-";
+    cout << ".";
   cout << endl;
-}
-
-
-
-
-void testWriteScreen()
-{
-  int x = WINDOW_COLUMNS / 2;
-  for (int y = 0; y < WINDOW_ROWS; ++y)
-  {
-    cls();
-    writeScreen(x, y);
-    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-  }
-}
-
-bool writeScreen(int x, int y)
-{
-  if (x < 1 || x > WINDOW_COLUMNS)
-  {
-    cout << "Error in writeScreen: horizontal (" << x << ") is out of bounds.";
-    return 1;
-  }
-  else if (y < 1 || y > WINDOW_ROWS)
-  {
-    cout << "Error in writeScreen: vertical (" << y << ") is out of bounds.";
-    return 1;
-  }
-  else 
-  {
-    cout << WINDOW_ROWS << string(WINDOW_COLUMNS - 3, '-') << endl;; //line WINDOW_ROWS
-    
-    int row, col;
-    for (row = (WINDOW_ROWS - 1); row > 0; --row)
-    {
-      cout << setw(2) << row;
-      if (row == y)
-      {
-        //for (col = 0; col < x; ++col)
-        //  cout << ' ';
-        //cout << '*';
-        cout << string(x, ' ') << '*';
-      }
-      cout << endl;
-    }
-    
-    cout << " 0" << string(WINDOW_COLUMNS - 3, '-') << endl; //line 0
-  }
-}
-
-void cls()
-{
-  for (int i = 0; i < 100; ++i)
-    cout << endl;
-  return;
 }

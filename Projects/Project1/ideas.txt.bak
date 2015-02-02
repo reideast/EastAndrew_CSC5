@@ -4,8 +4,6 @@ guess how much thrust you need to launch a rocket up out of the atmosphere
 challenge because more thrust realistically adds more fuel weight (there's a formula for this, right?)
 three difficulty levels: just the rocket, small payload, and heavy payload
 
-Easy time of burn
-Med or hard amt of fuel and thrust 
 
 Inputs:
 thrust
@@ -15,6 +13,8 @@ time of thrust in seconds
     -changes over time as fuel is burnt up? (formula?)
 maybe change type of engine? liquid, solid, boosters, sci-fi (ion, nuclear (Fallout reference))
 easy vs hard: asteroid, moon, earth (add non-negligible atmosphere)
+Easy only time of burn, thrust is already near-ideal
+Med or hard amt of fuel and thrust 
 
 Calculation:
 Height as function of time & thrust & fuel
@@ -135,8 +135,10 @@ mass_empty is defined
   if I let mdot be defined (the amount of fuel flow is always the same), then higher F means higher v_e
   which makes less sense to me
 v_e is defined
-  Isp = v_e / g, so Isp is also pre-defined
+  Isp = v_e / g, so Isp is also pre-defined?
 mdot = F / v_e
+max_fuel = mdot * time_burn
+fuel_remaining(t): max_fuel - mdot*t
 
 output: height
 

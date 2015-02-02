@@ -1,0 +1,10 @@
+File,Function,LOC,SLOC-P,SLOC-L,MVG,BLOC,C&SLOC,CLOC,CWORD
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"main(int argc, char** argv)",36,32,25,3,4,0,0,0,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,runGame(short difficulty),90,73,49,5,10,4,7,100,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"runSimulation(float F_thrust, float time_burn, float Isp, float m_v_empty, float targetAltitude, bool hardMode, float targetVelocityThreshold)",65,53,33,11,5,8,7,90,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"oneFrameCalculateAndDisplay(float& currentAltitude, float& currentVelocity, float t, float Isp, float time_burn, float m_v0, float mdot, float targetAltitude)",35,28,22,4,5,3,2,27,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"velocityDuringBurn(float t, float Isp, float m_v0, float mdot)",2,2,2,1,0,0,0,0,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"altitudeDuringBurn(float t, float Isp, float m_v0, float m_curr)",3,2,2,1,0,0,1,27,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"ballisticAltitude(float t, float v_0, float y_0)",2,2,2,1,0,1,0,9,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"ballisticVelocity(float t, float v_0)",2,2,2,1,0,1,0,7,
+C:\Users\Magister\Dropbox\RCC\CSC-5\ae2274193\Projects\Project1\main.cpp,"drawRocket(float y, float ceiling, unsigned short cols)",59,38,23,7,9,3,12,97,
