@@ -24,8 +24,7 @@ const float g = 9.80665; // m/s^2 - g_0 at sea level
 
 //Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
 const int ANIMATION_RATE = 50; //in milliseconds
-// const int TIME_FACTOR = 20; //speed up simulation time by * 20 to make the game feel less sluggish
-const int TIME_FACTOR = 100; //speed up simulation time by * 20 to make the game feel less sluggish
+const int TIME_FACTOR = 100; //speed up simulation time by * 100 to make the game feel less sluggish
 
 
 //Function Prototypes
@@ -88,26 +87,38 @@ int main(int argc, char** argv)
   cout << "**********************************************************" << endl;
   cout << endl;
   
-  short menuChoice = 0;
-  do
+  char menuChoice = 0;
+  bool stillPlaying = true;
+  while (stillPlaying)
   {
     menuChoice = 0;
     cout << "What difficulty would you like to play at?" << endl
-         << " 1. Easy (one variable)" << endl
-         << " 2. Medium (two variables)" << endl
-         << " 3. Hard (two variables and must approach the station at low velocity)" << endl
-         << " 4. Exit program" << endl;
-    do
+         << " A. Easy (one variable)" << endl
+         << " B. Medium (two variables)" << endl
+         << " C. Hard (two variables and must approach the station at low velocity)" << endl
+         << " D. Exit program" << endl;
+    cin >> menuChoice;
+    
+    switch (menuChoice)
     {
-      if (menuChoice != 0) cout << "Please enter 1, 2, 3, or 4: ";
-      cin >> menuChoice;
-    } while (menuChoice < 1 || menuChoice > 4);
-    cout << endl;
-    if (menuChoice != 4)
-      runGame(menuChoice);
-  } while (menuChoice != 4);
+      case 'A': case 'a':
+        runGame(1);
+        break;
+      case 'B': case 'b':
+        runGame(2);
+        break;
+      case 'C': case 'c':
+        runGame(3);
+        break;
+      case 'D': case 'd': 
+        cout << "Thanks for playing!" << endl;
+        stillPlaying = false;
+        break;
+      default:
+        cout << "That was not a valid menu choice! Please enter A, B, C, or D." << endl;
+    }
+  }
   
-  cout << "Thanks for playing!" << endl;
   
   return 0;
 }
@@ -396,4 +407,3 @@ void drawRocket(float y, float ceiling, unsigned short cols)
     cout << ".";
   cout << endl;
 }
-
