@@ -132,7 +132,7 @@ void displaySplashScreen()
   }
   else
   {
-    char c;
+    char c = 0;
     while (fileStreamGraphic.get(c))
     {
       cout << c;
@@ -258,7 +258,7 @@ bool runSimulation(float F_thrust, float time_burn, float Isp, float m_v_empty, 
     //wait for ANIMATION_RATE to establish proper frame rate
     this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
 
-    //adjust t by actual time elapsed by computer clock
+    //adjust t by actual time elapsed by computer clock, then multiply by TIME_FACTOR
     t = (chrono::duration<float>(chrono::steady_clock::now() - startTime)).count() * TIME_FACTOR;
   }
   if (currAltitude > maxAltitude)
@@ -383,9 +383,9 @@ void drawRocket(float y, float ceiling, unsigned short cols)
   }
   else if (y > ceiling) //if progressed to the goal, just draw the ">" at the ending goal mark
   {
-    cout << "|";
+    cout << '|';
     for (i = 1; i <= (cols - 4); ++i)
-      cout << " ";
+      cout << ' ';
     cout << ">=~";
     cout << endl;
   }
@@ -395,9 +395,9 @@ void drawRocket(float y, float ceiling, unsigned short cols)
     
     if (spacesProgressed != 0)
     {
-      cout << "|";
+      cout << '|';
       for (i = 0; i < (spacesProgressed - 1); ++i)
-        cout << " ";
+        cout << ' ';
       // cout << "i="<< i;
     }
     
@@ -407,12 +407,12 @@ void drawRocket(float y, float ceiling, unsigned short cols)
     // int count = 0;
     for (i = (cols - 4); i > spacesProgressed; --i)
     {
-      cout << " ";
+      cout << ' ';
       // ++count;
     }
     // cout << "count=" << count;
     
-    cout << "|";// << endl;
+    cout << '|';// << endl;
     
     // cout << "spcProg=" << spacesProgressed << " (" << ((y / ceiling) * 100) << "%)";
     cout << endl;
@@ -420,6 +420,6 @@ void drawRocket(float y, float ceiling, unsigned short cols)
   
   //draw a line after
   for (i = 1; i <= cols; ++i)
-    cout << ".";
+    cout << '.';
   cout << endl;
 }
