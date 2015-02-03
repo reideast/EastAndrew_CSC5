@@ -132,11 +132,10 @@ void displaySplashScreen()
   }
   else
   {
+    //display file char-by-char
     char c = 0;
     while (fileStreamGraphic.get(c))
-    {
       cout << c;
-    }
   }
 }
 
@@ -350,7 +349,6 @@ float velocityDuringBurn(float t, float Isp, float m_v0, float mdot)
 float altitudeDuringBurn(float t, float Isp, float m_v0, float m_curr)
 {
   return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 0.5 * t * t);
-  // return g * ( -t * Isp * ((log(m_v0 / m_curr)) / ((m_v0 / m_curr) - 1)) + t * Isp - 1/2.0f * t * t);
 }
 float ballisticAltitude(float t, float v_0, float y_0)
 {
@@ -365,11 +363,6 @@ float ballisticVelocity(float t, float v_0)
 void drawRocket(float y, float ceiling, unsigned short cols)
 {
   unsigned short i;
-  
-  //draw a line before:
-  // for (i = 1; i <= cols; ++i)
-    // cout << "-";
-  // cout << endl;
   
   //a "crashed" rocket will be drawn on the launchpad
   if (y < 0)
@@ -386,7 +379,7 @@ void drawRocket(float y, float ceiling, unsigned short cols)
     cout << '|';
     for (i = 1; i <= (cols - 4); ++i)
       cout << ' ';
-    cout << ">=~";
+    cout << ">=-";
     cout << endl;
   }
   else
@@ -401,20 +394,13 @@ void drawRocket(float y, float ceiling, unsigned short cols)
       // cout << "i="<< i;
     }
     
-    cout << ">=~";
+    cout << ">=-";
     
-    // cout << "i="<< (cols - 2);
-    // int count = 0;
     for (i = (cols - 4); i > spacesProgressed; --i)
     {
       cout << ' ';
-      // ++count;
     }
-    // cout << "count=" << count;
-    
     cout << '|';// << endl;
-    
-    // cout << "spcProg=" << spacesProgressed << " (" << ((y / ceiling) * 100) << "%)";
     cout << endl;
   }
   
