@@ -9,6 +9,7 @@
 //System Libraries
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <cmath>
 
 //<chrono> for simulation time keeping and <thread> for animation sleeping. I referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
@@ -28,6 +29,11 @@ const int TIME_FACTOR = 100; //speed up simulation time by * 100 to make the gam
 
 
 //Function Prototypes
+
+//displaySplashScreen: read an ASCII art from a file to display to <iostream>
+void displaySplashScreen();
+//preconditions:
+//  "splashScreen.graphic" exists in the program directory
 
 //runGame: Run an entire round of the game, taking inputs from <iostream> until user is successful
 void runGame(short difficulty);
@@ -76,16 +82,7 @@ int main(int argc, char** argv)
 {
   cout << fixed << setprecision(2);
   
-  cout << "**********************************************************" << endl;
-  cout << "**                                                      **" << endl;
-  cout << "**\\   Welcome to the Rocket Launch Simulation Game!     **" << endl;
-  cout << "***\\                                                 *  **" << endl;
-  cout << "****\\                                          *        **" << endl;
-  cout << "****)                                              *    **" << endl;
-  cout << "****|)    ----    ---   --  -  -   >=~        *      *  **" << endl;
-  cout << "****)                                             *     **" << endl;
-  cout << "**********************************************************" << endl;
-  cout << endl;
+  displaySplashScreen();
   
   char menuChoice = 0;
   bool stillPlaying = true;
@@ -123,6 +120,25 @@ int main(int argc, char** argv)
   return 0;
 }
 
+
+void displaySplashScreen()
+{
+  ifstream fileStreamGraphic;
+  fileStreamGraphic.open("splashScreen.graphic");
+  if (fileStreamGraphic.fail())
+  {
+    //display welcome message even if the file was not opened
+    cout << endl << "Welcome to the Rocket Launch Simulation Game!" << endl << endl;
+  }
+  else
+  {
+    char c;
+    while (fileStreamGraphic.get(c))
+    {
+      cout << c;
+    }
+  }
+}
 
 
 void runGame(short difficulty)
