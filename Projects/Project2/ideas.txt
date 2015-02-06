@@ -1,2 +1,12 @@
 text-based rpg (zork)
+RPG with controls, like Rogue
 life
+life vs. battleship
+  human is battleship
+  CPU is alien invader that follows rules of Conway's game of life
+  human places ships, then spends turn eradicating ~5 squares of life
+  CPU starts with random life squares all over the board, then can intelligently place squres each turn
+  After CPU goes, run life for ~10 cycles
+  If a square of a ship spends a certain amount of time under a LIFE square, it looses a hit point
+  If a square looses ~3 hit points, it is a HIT
+  Ships get HIT and SINK just like in Battleship
