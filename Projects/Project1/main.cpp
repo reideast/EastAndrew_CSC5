@@ -137,6 +137,7 @@ void displaySplashScreen()
     while (fileStreamGraphic.get(c))
       cout << c;
   }
+  fileStreamGraphic.close();
 }
 
 
