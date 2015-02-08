@@ -165,7 +165,7 @@ bool getAKey(char& input)
                 input = '\n';
               else
                 isInputDone = false;
-              // if (DEBUG_MODE) cout << "DEBUG: string to return: \"" << input << "\"";
+              if (DEBUG_MODE) cout << "DEBUG: string to return: \"" << input << "\"";
             }
           break;
 
