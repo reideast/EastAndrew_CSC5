@@ -45,6 +45,25 @@ void printControlScheme();
 //Execution Begins Here
 int main(int argc, char** argv)
 {
+  /*
+  implement this:
+  make WIN32_MODE flag into local
+  
+  player is a STRUCT
+  monsters struct
+  
+  all NPC are in a (vector)
+  player moves
+  then iterate the vector for all NPC to take actions
+  
+  help screen
+  inventory screen
+  
+  battle screen
+  
+  scroll map
+  */
+  
   short screenSizeMaxX = 100, screenSizeMaxY = 40;
   string mapFile = "gameMap.txt";
   
