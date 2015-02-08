@@ -16,18 +16,18 @@ using namespace std;
 //Global Constants
 
 //Function Prototypes
-void test(char a[], int size);
-int assign(char a[], string toAssign, short MAX);
-bool delete_repeats(char orig[], int &size);
-bool extract(char orig[], int position, int &size);
-void printArray(const char orig[], int size);
+void test(char a[], short size);
+short assign(char a[], string toAssign, short MAX);
+bool delete_repeats(char orig[], short &size);
+bool extract(char orig[], short position, short &size);
+void printArray(const char orig[], short size);
 
 
 //Execution Begins Here
 int main(int argc, char** argv)
 {
   const short MAX = 30;
-  int size = 4;
+  short size = 4;
   char a[MAX] = {'a', 'b', 'a', 'c'};
 
   test(a, size);
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   return 0;
 }
 
-void test(char a[], int size)
+void test(char a[], short size)
 {
   printArray(a, size);
   cout << endl;
@@ -77,9 +77,9 @@ void test(char a[], int size)
   cout << endl;
 }
 
-int assign(char a[], string toAssign, short MAX)
+short assign(char a[], string toAssign, short MAX)
 {
-  int i;
+  short i;
   for (i = 0; i < toAssign.length() && i < MAX; ++i)
   {
     a[i] = toAssign.at(i); //string.at() see savitch ch 8 pg 483
@@ -87,14 +87,14 @@ int assign(char a[], string toAssign, short MAX)
   return i; //will be (last array index + 1) because of failed test
 }
 
-bool delete_repeats(char orig[], int &size)
+bool delete_repeats(char orig[], short &size)
 {
   // cout << "CYBERMAN SAYS? DELETED!" << endl;
-  for (int master = 0; master < size; ++master)
+  for (short master = 0; master < size; ++master)
   {
-    for (int inspecting = (master + 1); inspecting < size; ++inspecting)
+    for (short inspecting = (master + 1); inspecting < size; ++inspecting)
       if (orig[master] == orig[inspecting])
-        if (!extract(orig, inspecting, size)) //this changes size!! so, both for loops will now end earlier, right?!?
+        if (!extract(orig, inspecting, size)) //this changes size!! so, both for loops will now end earlier than before
         {
           cout << "Extraction of " << orig[inspecting] << " at position " << inspecting << " from ";
           printArray(orig, size);
@@ -109,7 +109,7 @@ bool delete_repeats(char orig[], int &size)
   return true;
 }
 
-bool extract(char orig[], int position, int &size)
+bool extract(char orig[], short position, short &size)
 {
   if (position >= size)
   {
@@ -117,15 +117,15 @@ bool extract(char orig[], int position, int &size)
   }
   else
   {
-    for (int i = position; i < (size - 1); ++i)
+    for (short i = position; i < (size - 1); ++i)
       orig[i] = orig[i + 1];
     --size;
     return true;
   }
 }
 
-void printArray(const char orig[], int size)
+void printArray(const char orig[], short size)
 {
-  for (int i = 0; i < size; ++i)
+  for (short i = 0; i < size; ++i)
     cout << orig[i];
 }
