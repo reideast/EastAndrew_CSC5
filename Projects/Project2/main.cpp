@@ -19,6 +19,7 @@
   
   help screen
   inventory screen
+  -> sorting requirement: sort the inventory items
   
   battle screen
   
@@ -29,6 +30,12 @@
   */
 
 
+//System Libraries
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <fstream>
+
 // MSDN Method to Read Unbuffered Input from Keyboard
 //  reference:
 //    reading input buffer events
@@ -38,45 +45,119 @@
 #include <windows.h> //for Windows-only implementation of keyboard input and CLS
 // #include <stdio.h> //for printf and stderr only, i think. remove those, then disable.
 
-
 //<chrono> for simulation time keeping and <thread> for animation sleeping.
 //  referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
 //<chrono> needs C++11. To configure g++ in NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
 #include <chrono>
 #include <thread>
-
-
-
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <fstream>
-
 using namespace std;
 
-const bool DEBUG_MODE = true;
-
+//Global Constants
 //Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
 const int ANIMATION_RATE = 50; //in milliseconds
 
-bool isRunningInAWin32Console();
-bool resizeConsole_win32(short cols, short rows);
-bool getAKey(char& input, bool WIN32_MODE = false);
+const int LINE_MAX = 80;
+const bool DEBUG_MODE = true;
+
+//Struct Prototypes
+
+struct Asset
+{
+  short assetID;
+};
+
+struct MapSquare
+{
+  char display;
+  Asset* linkedAsset;
+};
+
+struct GameProperties
+{
+  short screenSizeX;
+  short screenSizeY;
+  short mapSizeX;
+  short mapSizeY;
+  
+  MapSquare *map;
+  
+  string saveFolder;
+  
+  Asset *gameAssets;
+};
+
+
+struct Item : Asset
+{
+  short assetID; //links to a file
+  char *art; //string (including \n) of ASCII art of item
+};
+
+struct Player : Asset
+{
+  short x;
+  short y;
+  
+  short hp;
+  short mp;
+  short qtyPotion;
+  
+  short equippedWeaponID;
+  Item* inventory; //array
+};
+
+struct Monster : Asset
+{
+  short x;
+  short y;
+  
+  short hp;
+  short hitBonus;
+  short damage;
+};
+
+
+//Function Prototypes
+
+//screen display:
+void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
+// void printMap(char *map, short maxX, short maxY);
+void printMap(MapSquare *map, short sizeX, short sizeY);
+void printControlScheme();
 bool cls(bool WIN32_MODE = false);
 bool win32_cls();
 
-bool getMapFromFile(string filename, char *map, short maxX, short maxY);
+//user input:
+bool getAKey(char& input, bool WIN32_MODE = false);
 
-void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
-void printMap(char *map, short maxX, short maxY);
-void printControlScheme();
+//file I/O:
+bool loadFromFile(string filename, GameProperties &game);
+
+//system checks:
+bool isRunningInAWin32Console();
+bool resizeConsole_win32(short cols, short rows);
+
 
 //Execution Begins Here
 int main(int argc, char** argv)
 {
+  GameProperties game;
+  
+  const string defaultGameDir = "gameMap1";
+  const string mapFile = defaultGameDir + "\\" + "gameMap.txt";
+  
+  
+  // MapSquare *map; //will be initialized in loadFromFile // = new char[mapSizeMaxY * mapSizeMaxX];
+  
+  // if (!loadFromFile(mapFile, map, mapSizeMaxX, mapSizeMaxY))
+  if (!loadFromFile(mapFile, game))
+  {
+    cout << "Reading game from disk has failed." << endl;
+    delete [] game.map;
+    return 1;
+  }
   
   short screenSizeMaxX = 100, screenSizeMaxY = 40;
-  string mapFile = "gameMap.txt";
   
   const short NUM_STATUS = 4;
   string statusDictionary[4];
@@ -108,14 +189,7 @@ int main(int argc, char** argv)
   short playerX = 20, playerY = 5;
   string statusLine1, statusLine2;
   
-  char *map = new char[mapSizeMaxY * mapSizeMaxX];
-  
-  if (!getMapFromFile(mapFile, map, mapSizeMaxX, mapSizeMaxY))
-  {
-    cout << "Reading game map from file has failed." << endl;
-    delete [] map;
-    return 1;
-  }
+
   
   // for (y = 0; y < mapSizeMaxY; ++y)
     // for (x = 0; x < mapSizeMaxX; ++x)
@@ -123,16 +197,16 @@ int main(int argc, char** argv)
       // map[y * mapSizeMaxX + x] = ' ';
     // }
     
-  char *playerPtr = &map[playerY * mapSizeMaxX + playerX];
-  *playerPtr = 'Q';
+  MapSquare *playerPtr = &game.map[playerY * mapSizeMaxX + playerX];
+  playerPtr->display = 'Q';
   
-  map[11 * mapSizeMaxX + 20] = 'W';
+  game.map[11 * mapSizeMaxX + 20].display = 'W';
   
   short currStatusLine = STATUS_INIT;
   
   cls(WIN32_MODE);
+  printMap(game.map, mapSizeMaxX, mapSizeMaxY);
   printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
-  printMap(map, mapSizeMaxX, mapSizeMaxY);
   printControlScheme();
   
   char input = 0;
@@ -142,8 +216,8 @@ int main(int argc, char** argv)
   while (isGameRunning)
   {
     cls(WIN32_MODE);
+    printMap(game.map, mapSizeMaxX, mapSizeMaxY);
     printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
-    printMap(map, mapSizeMaxX, mapSizeMaxY);
     printControlScheme();
     
     if (getAKey(input, WIN32_MODE))
@@ -199,7 +273,7 @@ int main(int argc, char** argv)
     
   }
   
-  delete [] map;
+  delete [] game.map;
   return 0;
   
   
@@ -217,7 +291,7 @@ int main(int argc, char** argv)
     this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
   }
  
-  delete [] map;
+  delete [] game.map;
   return 0; 
 }
 
@@ -236,7 +310,7 @@ void printStatus(string line1, string line2, short hp, short mp, short qtyPotion
   cout << " [ HP: " << hp << " ]   [ MP: " << mp << " ]   [ Potions: " << qtyPotion << " ]" << endl;
 }
 
-void printMap(char *map, short sizeX, short sizeY)
+void printMap(MapSquare *map, short sizeX, short sizeY)
 {
   short x, y;
   for (y = 0; y < sizeY; ++y)
@@ -246,7 +320,7 @@ void printMap(char *map, short sizeX, short sizeY)
     {
       // if (!(x % 10))
         // cout << x;
-      cout << map[y * sizeX + x];
+      cout << map[y * sizeX + x].display;
     }
     cout << endl;
   }
@@ -270,7 +344,8 @@ void printControlScheme()
 //******************************   Setup Game   ********************************
 //******************************************************************************
 
-bool getMapFromFile(string filename, char *map, short maxX, short maxY)
+// bool loadFromFile(string filename, char *map, short maxX, short maxY)
+bool loadFromFile(string filename, GameProperties &game)
 {
   ifstream mapFile;
   mapFile.open(filename);
@@ -283,7 +358,31 @@ bool getMapFromFile(string filename, char *map, short maxX, short maxY)
     char c = 0;
     short i = 0;
     short x = 0, y = 0;
+    
+    char* line;
+    
+    
+    mapFile >> game.screenSizeX >> game.screenSizeY >> game.mapSizeX >> game.mapSizeY;
+    
+    cout << game.screenSizeX << game.screenSizeY << game.mapSizeX << game.mapSizeY << endl;
+    
+    //consume line break:
+    char temp;
+    do
+    {
+      mapFile.get(temp);
+      cout << static_cast<int>(temp) << endl;
+    } while (temp != '\n');
+    
+    mapFile.getline(line, LINE_MAX);
+    cout << "'" << line << "'" << endl;
+    
+    return true;
+    
+    short maxX = 0, maxY = 0;
+    
     short max = maxX * maxY;
+    game.map = new MapSquare[maxX * maxY];
     while (mapFile.get(c) && y <= maxY && x <= maxX)
     {
       // cout << static_cast<int>(c);
@@ -325,7 +424,7 @@ bool getMapFromFile(string filename, char *map, short maxX, short maxY)
       else
       {
         // map[i++] = c;
-        map[y * maxX + x++] = c;
+        game.map[y * maxX + x++].display = c;
       }
     }
     if (y != maxY && x != maxX)
