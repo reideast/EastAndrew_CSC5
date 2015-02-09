@@ -1,5 +1,13 @@
+/* 
+    File:   main.cpp
+    Author: Andrew Reid East
+    Class: CSC-5 40718
+    Created on February 5, 2015, 5:54 PM
+    Purpose: Play an ASCII-text based RPG/Adventure/Maze game inspired by Rogue
+ */
 
-
+ 
+ 
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms685035(v=vs.85).aspx
 // cls using WinAPI
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682022(v=vs.85).aspx
