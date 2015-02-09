@@ -30,18 +30,21 @@ int main(int argc, char** argv)
   int rows = 3, cols = 4;
   int *arr = create2DArray(rows, cols);
   
+  cout << "Uninitialized:" << endl;
   print2DArray(arr, rows, cols);
   cout << endl;
   
+  cout << "Filled:" << endl;
   fill2DArray(arr, rows, cols);
   print2DArray(arr, rows, cols);
   cout << endl;
   
+  cout << "Changed (1, 1) to 42:" << endl;
   set(arr, rows, cols, 1, 1, 42);
   print2DArray(arr, rows, cols);
   cout << endl;
   
-  cout << "The item at index (1, 1) is: " << get(arr, rows, cols, 1, 1) << endl;
+  cout << "The item at index (1, 1) is: " << get(arr, rows, cols, 1, 1) << endl << endl;
   
   return 0;
 }

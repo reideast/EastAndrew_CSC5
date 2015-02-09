@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   
   size = 9;
   double b[MAX] = {5,5,5,4,4,4,6,6,6};
-  test(b, size); //should equal 0.816497 -- calulated by using Excel's STDEV.P (stdDev of population)
+  test(b, size); //should equal 0.816497 -- calculated by using Excel's STDEV.P (stdDev of population)
   cout << endl;
   
   size = 150;

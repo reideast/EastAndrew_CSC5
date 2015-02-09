@@ -41,8 +41,7 @@ int main(int argc, char** argv)
   print2DArray(arr, rows, cols);
   cout << endl;
   
-  cout << "
-  set(arr, rows, cols, 1, 1, 42);
+  cout << "The item at index (1, 1) is: " << get(arr, rows, cols, 1, 1) << endl;
   
   return 0;
 }

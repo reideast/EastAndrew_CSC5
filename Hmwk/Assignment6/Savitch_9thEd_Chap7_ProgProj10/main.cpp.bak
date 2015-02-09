@@ -3,7 +3,7 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on February 8, 2015, 2:07 PM
-    Purpose: two player tic-tac-to
+    Purpose: two player tic-tac-toe
  */
 
 //System Libraries
@@ -75,14 +75,14 @@ int playGame(char players[], int current)
   
   if (winner == 2)
   {
-    cout << endl << "The game ended in a draw." << endl;
     displayBoard(board, players);
+    cout << endl << "The game ended in a draw." << endl;
     return -1;
   }
   else
   {
-    cout << endl << "Player " << players[winner] << " has won!" << endl;
     displayBoard(board, players);
+    cout << endl << "Player " << players[winner] << " has won!" << endl;
     return winner;
   }
 }

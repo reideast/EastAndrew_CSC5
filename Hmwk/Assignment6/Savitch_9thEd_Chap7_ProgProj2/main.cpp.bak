@@ -163,7 +163,7 @@ char decToHexDigit(short dec)
 }
 
 short hexToDecDigit(char hex)
-{ 
+{
   if (hex >= '0' && hex <= '9')
     return hex - '0';
   else if (hex >= 'A' && hex <= 'F')

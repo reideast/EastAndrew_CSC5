@@ -3,7 +3,7 @@
     Author: Andrew Reid East
     Class: CSC-5 40718
     Created on February 8, 2015, 2:07 PM
-    Purpose: two player tic-tac-to
+    Purpose: two player tic-tac-toe
  */
 
 //System Libraries
@@ -20,10 +20,6 @@ void displayBoard(int board[], char players[]);
 void getSquare(int &input, int board[]);
 int checkWinner(int board[]); // returns -1 for no win, 0 for first player wins, 1 for second
 int sum(int nums[], int first, int last);
-
-//GetInput: Get input from <iostream> between a minimum and maximum value
-//  (From my Savitch_9thEd_Chap4_ProgProj1)
-void getInput(string prompt, int& input, int min = 0, int max = ~(1 << (sizeof(int) * 8) - 1));
 
 //Execution Begins Here
 int main(int argc, char** argv)
@@ -169,20 +165,4 @@ int sum(int nums[], int first, int last)
   for ( ; first <= last; ++first)
     sum += nums[first];
   return sum;
-}
-
-void getInput(string prompt, int& input, int min, int max)
-{
-  bool isInputValid = false; //controls input loop (ie, loop until input is right)
-  while (!isInputValid)
-  {
-    cout << prompt;
-    cin >> input;
-    if (input < min)
-      cout << "The input cannot be less than " << min << ". Please input again." << endl;
-    else if (input > max)
-      cout << "The input cannot be greater than " << max << ". Please input again." << endl;
-    else
-      isInputValid = true;
-  }
 }
