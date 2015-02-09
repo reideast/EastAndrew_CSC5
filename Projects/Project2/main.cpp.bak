@@ -66,10 +66,17 @@ struct Asset
   short assetID;
 };
 
+struct Actor : Asset
+{
+  char display;
+  short x;
+  short y;
+};
+
 struct MapSquare
 {
   char display;
-  Asset* linkedAsset;
+  Actor* linkedActor;
 };
 
 struct GameProperties
@@ -93,11 +100,8 @@ struct Item : Asset
   char *art; //string (including \n) of ASCII art of item
 };
 
-struct Player : Asset
+struct Player : Actor
 {
-  short x;
-  short y;
-  
   short hp;
   short mp;
   short qtyPotion;
@@ -106,11 +110,8 @@ struct Player : Asset
   Item* inventory; //array
 };
 
-struct Monster : Asset
-{
-  short x;
-  short y;
-  
+struct Monster : Actor
+{  
   short hp;
   short hitBonus;
   short damage;
@@ -126,6 +127,7 @@ void printMap(MapSquare *map, short sizeX, short sizeY);
 void printControlScheme();
 bool cls(bool WIN32_MODE = false);
 bool win32_cls();
+void switchFromStreamToGet(istream &strm);
 
 //user input:
 bool getAKey(char& input, bool WIN32_MODE = false);
@@ -355,87 +357,99 @@ bool loadFromFile(string filename, GameProperties &game)
   }
   else
   {
-    char c = 0;
-    short i = 0;
-    short x = 0, y = 0;
-    
-    char* line;
-    
-    
     mapFile >> game.screenSizeX >> game.screenSizeY >> game.mapSizeX >> game.mapSizeY;
     
-    cout << game.screenSizeX << game.screenSizeY << game.mapSizeX << game.mapSizeY << endl;
     
-    //consume line break:
-    char temp;
-    do
+    //consume line break left in from >> operator:
+    switchFromStreamToGet(mapFile);
+    
+    game.map = new MapSquare[game.mapSizeX * game.mapSizeY];
+
+    // while (mapFile.get(c) && y <= game.mapSizeY && x <= game.mapSizeX)
+    // char* line;
+    string line;
+    short x = 0, y = 0;
+    while (y < game.mapSizeY && getline(mapFile, line).good())
     {
-      mapFile.get(temp);
-      cout << static_cast<int>(temp) << endl;
-    } while (temp != '\n');
-    
-    // mapFile.getline(line, LINE_MAX);
-    // cout << "'" << line << "'" << endl;
-    
-    return true;
-    
-    short maxX = 0, maxY = 0;
-    
-    short max = maxX * maxY;
-    game.map = new MapSquare[maxX * maxY];
-    while (mapFile.get(c) && y <= maxY && x <= maxX)
-    {
-      // cout << static_cast<int>(c);
-      // cout << c;
-      // if (((i % maxX) + 1) == (maxX + 1)) //it is the last character in a line
-      if (x == maxX)
+      // cout << "DEBUG: y=" << y << ", line=\"" << line << "\"" << endl;
+      x = 0;
+      //parse line:
+      while (x < line.length() && line.at(x) != '\n' && line.at(x) != '\r')
       {
-        // if (c != '\n') //it should be a CR
-        if (c != 13) //it should be a CR
-        {
-          cout << c << endl;
-          cout << i << endl;
-          cout << "Improperly formatted Map file (" << filename << "). Line num " << (y + 1) << " is not the proper length." << endl;
-          return false;
-        }
-        else //it is a newline, so ignore the character
-        {
-          if (mapFile.get(c))
-          {
-            if (c == 10) //LF
-            {
-              ++y;
-              // cout << "Line " << y << " completed." << endl;
-              x = 0;
-            }
-            else
-            {
-              cout << "There was no CR/LF at the end of the line." << endl;
-              return false;
-            }
-          }
-          else
-          {
-            cout << "Read failed." << endl;
-            return false;
-          }
-        }
+        // cout << "DEBUG: x=" << x << ",c=" << line.at(x) << endl;;
+        game.map[y * game.mapSizeX + x].display = line.at(x++);
       }
-      else
+      if (x != game.mapSizeX)
       {
-        // map[i++] = c;
-        game.map[y * maxX + x++].display = c;
+        cout << "Improperly formatted Map file (" << filename << "). Line num " << (y + 1) << " is " << x << " wide, not the proper length of " << game.mapSizeX << "." << endl;
+        return false;
       }
+      ++y;
     }
-    if (y != maxY && x != maxX)
+    if (y != game.mapSizeY && x != game.mapSizeX)
     {
-      cout << "Map file  (" << filename << ") was not " << maxX << " wide by " << maxY << " tall. It was " << x << " by " << y << "." << endl;
+      cout << "Map file (" << filename << ") was not " << game.mapSizeX << " wide by " << game.mapSizeY << " tall. It was " << x << " by " << y << "." << endl;
       return false;
     }
+    
+    //link these assets we're about to find into GameProperties game and MapSquares
+    
+    //read asset list at the bottom
+    short linePos = 0;
+    short data = 0;
+    string currItem = "";
+    while (getline(mapFile, line).good())
+    {
+      //line is not full enough to be a full asset line. ignore it.
+      if (line.length() < 1)
+        continue;
+      
+      //parse line:
+      linePos = 0;
+      Actor *newActor = new Actor;
+      
+      //read char display
+      newActor->display = line.at(linePos++);
+      cout << "DEBUG: display=" << newActor->display << endl;
+      ++linePos; //skip comma
+      
+      //read x coordinate
+      while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
+        currItem += line.at(linePos++);
+      newActor->x = atoi(currItem.c_str());
+      cout << "Data converted: newActor->x=" << newActor->x << endl;
+      currItem = "";
+      ++linePos; //skip comma
+      
+      //read y coordinate
+      while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
+        currItem += line.at(linePos++);
+      newActor->y = atoi(currItem.c_str());
+      cout << "Data converted: newActor->y=" << newActor->y << endl;
+      currItem = "";
+      ++linePos; //skip comma
+      
+      //read assetID
+      while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r')
+      {
+        currItem += line.at(linePos++);
+        cout << "  char added to currItem=" << currItem << endl;
+      }
+      newActor->assetID = atoi(currItem.c_str());
+      cout << "Data converted: newActor->assetID=" << newActor->assetID << endl;
+      currItem = "";
+      
+      *((game.map) + y * game.mapSizeX + x).linkedActor = newActor;
+      game.gameAssets .next?? = newActor;
+
+      
+    }
+    
+    mapFile.close();
+    return true;
   }
-  mapFile.close();
-  return true;
 }
+
 
 //tests if there is a win32 console running this program right now
 bool isRunningInAWin32Console()
@@ -628,4 +642,15 @@ bool win32_cls()
   SetConsoleCursorPosition(hConsole, coordScreen);
   
   return true;
+}
+
+//function from Savitch 9th ed Ch 6 pg 347
+void switchFromStreamToGet(istream &strm)
+{
+  char temp;
+  do
+  {
+    strm.get(temp);
+    // cout << static_cast<int>(temp) << endl;
+  } while (temp != '\n' && temp != '\0');
 }
