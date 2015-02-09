@@ -6,56 +6,9 @@
     Purpose: Play an ASCII-text based RPG/Adventure/Maze game inspired by Rogue
  */
 
- 
- 
-// https://msdn.microsoft.com/en-us/library/windows/desktop/ms685035(v=vs.85).aspx
-// cls using WinAPI
-// https://msdn.microsoft.com/en-us/library/windows/desktop/ms682022(v=vs.85).aspx
 
-
-
-#include <windows.h> //for Windows-only implementation of keyboard input and CLS
-#include <stdio.h> //for printf and stderr only, i think. remove those, then disable.
-
-
-//<chrono> for simulation time keeping and <thread> for animation sleeping. I referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-//chrono needs C++11. To configure g++ in NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
-#include <chrono>
-#include <thread>
-
-
-
-#include <iostream>
-#include <iomanip>
-#include <string>
-#include <fstream>
-
-using namespace std;
-
-bool WIN32_MODE = true;
-const bool DEBUG_MODE = true;
-
-//Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
-const int ANIMATION_RATE = 50; //in milliseconds
-
-bool isRunningInAWin32Console();
-bool resizeConsole_win32(short cols, short rows);
-bool getAKey(char& input);
-bool cls();
-bool win32_cls();
-
-bool getMapFromFile(string filename, char *map, short maxX, short maxY);
-
-void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
-void printMap(char *map, short maxX, short maxY);
-void printControlScheme();
-
-//Execution Begins Here
-int main(int argc, char** argv)
-{
   /*
   implement this:
-  make WIN32_MODE flag into local
   
   player is a STRUCT
   monsters struct
@@ -69,8 +22,58 @@ int main(int argc, char** argv)
   
   battle screen
   
-  scroll map
+  save game to file
+  
+  reach goals:
+  scroll map??
   */
+
+
+// MSDN Method to Read Unbuffered Input from Keyboard
+//  reference:
+//    reading input buffer events
+//      https://msdn.microsoft.com/en-us/library/windows/desktop/ms685035(v=vs.85).aspx
+//    cls using WinAPI
+//      https://msdn.microsoft.com/en-us/library/windows/desktop/ms682022(v=vs.85).aspx
+#include <windows.h> //for Windows-only implementation of keyboard input and CLS
+// #include <stdio.h> //for printf and stderr only, i think. remove those, then disable.
+
+
+//<chrono> for simulation time keeping and <thread> for animation sleeping.
+//  referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
+//<chrono> needs C++11. To configure g++ in NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
+#include <chrono>
+#include <thread>
+
+
+
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <fstream>
+
+using namespace std;
+
+const bool DEBUG_MODE = true;
+
+//Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
+const int ANIMATION_RATE = 50; //in milliseconds
+
+bool isRunningInAWin32Console();
+bool resizeConsole_win32(short cols, short rows);
+bool getAKey(char& input, bool WIN32_MODE = false);
+bool cls(bool WIN32_MODE = false);
+bool win32_cls();
+
+bool getMapFromFile(string filename, char *map, short maxX, short maxY);
+
+void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
+void printMap(char *map, short maxX, short maxY);
+void printControlScheme();
+
+//Execution Begins Here
+int main(int argc, char** argv)
+{
   
   short screenSizeMaxX = 100, screenSizeMaxY = 40;
   string mapFile = "gameMap.txt";
@@ -85,7 +88,7 @@ int main(int argc, char** argv)
   statusDictionary[STATUS_EXIT + 1] = "(y/n)";
   
   //test for running in the proper console, and give a chance to quit if user wants
-  WIN32_MODE = isRunningInAWin32Console();
+  bool WIN32_MODE = isRunningInAWin32Console();
   if (!WIN32_MODE)
   {
     cout << "You are not running this program in a Windows Command Prompt console. Input and\nanimation will be more primitive. It is recommended you quit and run the .exe\nfrom outside any IDE's.\nDo you want to continue anyway? (y/n) ";
@@ -127,7 +130,7 @@ int main(int argc, char** argv)
   
   short currStatusLine = STATUS_INIT;
   
-  cls();
+  cls(WIN32_MODE);
   printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
   printMap(map, mapSizeMaxX, mapSizeMaxY);
   printControlScheme();
@@ -138,12 +141,12 @@ int main(int argc, char** argv)
   short confirmExitPrevStatus = 0;
   while (isGameRunning)
   {
-    cls();
+    cls(WIN32_MODE);
     printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
     printMap(map, mapSizeMaxX, mapSizeMaxY);
     printControlScheme();
     
-    if (getAKey(input))
+    if (getAKey(input, WIN32_MODE))
     {
       if (WIN32_MODE) cout << endl;
       switch ((input >= 'a' && input <= 'z') ? (input - 'a' + 'A') : input) //to upper
@@ -165,19 +168,6 @@ int main(int argc, char** argv)
           confirmExit = true;
           confirmExitPrevStatus = currStatusLine;
           currStatusLine = STATUS_EXIT;
-          // cin >> input;
-          // if (getAKey(input))
-          // {
-            // if (input == 'y' || input == 'Y')
-            // {
-            // }
-            // else if (input != 'n' && input != 'N')
-            // {
-              // cout << "Please input y or n." << endl;
-            // }
-          // }
-          // else
-            // cout << "Key input failed." << endl;
           break;
         case 'H':
           cout << "DEBUG: Display help here.";
@@ -208,16 +198,19 @@ int main(int argc, char** argv)
     }
     
   }
+  
   delete [] map;
   return 0;
   
+  
+  //****************************************************************************************************
   //test animation using cls()
   HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
   COORD coordScreen = { 0, 30 };
   //test cls:
   for (int i = 0; i < 77; ++i)
   {
-    cls();
+    cls(WIN32_MODE);
     SetConsoleCursorPosition(hStdout, coordScreen);
     cout << string(i, ' ') << ">=-" << endl;
     //wait for ANIMATION_RATE to establish proper frame rate
@@ -384,7 +377,7 @@ bool resizeConsole_win32(short cols, short rows)
 
 //MSDN Method to read unbuffered console input
 //https://msdn.microsoft.com/en-us/library/windows/desktop/ms685035(v=vs.85).aspx
-bool getAKey(char& input)
+bool getAKey(char& input, bool WIN32_MODE)
 {
   if(!WIN32_MODE)
   {
@@ -475,8 +468,8 @@ bool getAKey(char& input)
               else
                 isInputDone = false;
               if (isInputDone)
-                printf("%c", input);
-                // cout << input;
+                // printf("%c", input); //no longer needed b/c I figured out cout.flush() before opening up the buffer to wait for input
+                cout << input;
             }
           break;
 
@@ -498,7 +491,7 @@ bool getAKey(char& input)
 }
 
 //clear screen (will do it nicely using MSDN's console-handle method if enabled by WIN32_MODE
-bool cls()
+bool cls(bool WIN32_MODE)
 {
   if (WIN32_MODE)
     win32_cls();
