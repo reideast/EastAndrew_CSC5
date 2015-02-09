@@ -32,11 +32,15 @@ int main(int argc, char** argv)
   char b[MAX] = "abcdef"; //even
   test(b);
   
-  char c[MAX] = "A man, a plan, a canal: Panama."; //even
+  char c[MAX] = "A man, a plan, a canal: Panama."; //odd
   test(c);
-  
-  char d[MAX] = "i prefer pi"; //even
+  char d[MAX] = "amanaplanacanalpanama"; //odd
   test(d);
+  
+  char e[MAX] = "I prefer Pi!"; //even
+  test(e);
+  char f[MAX] = "ipreferpi"; //odd
+  test(f);
 
   
   return 0;
