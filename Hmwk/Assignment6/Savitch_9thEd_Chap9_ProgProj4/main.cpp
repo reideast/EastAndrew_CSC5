@@ -18,7 +18,7 @@ using namespace std;
 //Function Prototypes
 void test(char a[]);
 void reverse(char a[]);
-void swap(char &a, char &b);
+void swap(char *a, char *b);
 void printArrayInt(const char a[]);
 
 
@@ -31,6 +31,16 @@ int main(int argc, char** argv)
   
   char b[MAX] = "abcdef"; //even
   test(b);
+  
+  char c[MAX] = "A man, a plan, a canal: Panama."; //odd
+  test(c);
+  char d[MAX] = "amanaplanacanalpanama"; //odd
+  test(d);
+  
+  char e[MAX] = "I prefer Pi!"; //even
+  test(e);
+  char f[MAX] = "ipreferpi"; //odd
+  test(f);
 
   
   return 0;
@@ -38,37 +48,39 @@ int main(int argc, char** argv)
 
 void test(char a[])
 {
+  cout << "Original string \"" << a << "\" = ";
   printArrayInt(a);
-  cout << a << endl;
+  cout << endl;
   reverse(a);
+  cout << "Reversed string \"" << a << "\" = ";
   printArrayInt(a);
-  cout << a << endl;
+  cout << endl;
 }
 
-//code based on my Savitch_9thEd_Chap7_ProgProj2
-void reverse(char a[])
+//This code was going to be based upon my Savitch_9thEd_Chap7_ProgProj2, but that code doesn't apply at all, since it uses a loop counter.
+//so, the whole thing is redone using purely pointers
+void reverse(char* a)
 {
-  short length = 0;
-  while (a[length]) //loops until '\0' (which equals 0)
-    length++;
+  //took this method of counting the length out in favor of a pointer loop through a[] to find rear
+  // short length = 0;
+  // while (a[length]) //loops until '\0' (which equals 0)
+    // length++;
   // cout << "DEBUG: length=" << length << endl;
-  short start, end;
-  for (start = 0, end = (length - 1); start < length; ++start, --end)
-  {
-    // cout << "DEBUG: reversed[" << start << "]=" << reversed[start] << " set to orig[" << end << "]=" << orig[end] << endl;
-    reversed[start] = orig[end];
-  }
-  reversed[start] = '\0';
-  // cout << "DEBUG reverseString: orig=\"" << orig << "\", reversed=\"" << reversed << "\"" << endl;
-
+  
+  char *front = a, *rear = a;// = &a[length-1];
+  while (*rear) rear++; //while *rear is not '\0', increment rear
+  --rear; //go back one from '\0'
+  // cout << "DEBUG: front and rear start at: " << *front << "/" << *rear << endl;
+  while (front != rear && ((front - 1) != rear)) //odd length && even length (they do not overlap cases)
+    swap(front++, rear--);
+  // cout << "DEBUG reverseString: reversed=\"" << a << "\"" << endl;
 }
 
-
-void swap(char &a, char &b)
+void swap(char *a, char *b)
 {
-  char temp = a;
-  a = b;
-  b = temp;
+  char temp = *a;
+  *a = *b;
+  *b = temp;
 }
 
 void printArrayInt(const char orig[])
