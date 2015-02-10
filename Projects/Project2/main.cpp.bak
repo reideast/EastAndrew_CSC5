@@ -21,6 +21,8 @@
   inventory screen
   -> sorting requirement: sort the inventory items
   
+  note: (x) -> display msg -> NOT (y/n) -> clear exit state, does NOT clear msg
+  
   battle screen
   
   save game to file
@@ -34,6 +36,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <vector>
 
@@ -66,14 +69,29 @@ const bool DEBUG_MODE = true;
 //  example: (reinterpret_cast<Actor*>(newAsset))->display (newAsset is of type Asset*)
 struct Asset
 {
+  string name;
   short assetID;
-};
-
-struct Actor : Asset
-{
   char display;
   short x;
   short y;
+  
+  bool isActor;
+  short hp;
+  short ac;
+  short hitBonus;
+  short damage;
+  short damageBonus;
+  short exp;
+  
+  bool isPlayer;
+  // short mp;
+  short qtyPotion;
+  short expTotal;
+  // short equippedWeaponID;
+  // vector<Asset> inventory; //array
+  
+  // bool isItem;
+  // char *art; //string (including \n) of ASCII art of item
 };
 
 struct MapSquare
@@ -84,49 +102,27 @@ struct MapSquare
 
 struct GameProperties
 {
+  MapSquare *map;
+  vector<Asset*> gameAssets;
+  short playerIndex;
+  
+  string *currStatus;
+  vector<string> statusDictionary;
+  
+  string saveFolder;
+  string loadFolder;
+  
   short screenSizeX;
   short screenSizeY;
   short mapSizeX;
   short mapSizeY;
-  
-  MapSquare *map;
-  
-  string saveFolder;
-  
-  // Asset *gameAssets;
-  vector<Asset> gameAssets;
 };
-
-
-struct Item : Asset
-{
-  short assetID; //links to a file
-  char *art; //string (including \n) of ASCII art of item
-};
-
-struct Player : Actor
-{
-  short hp;
-  short mp;
-  short qtyPotion;
-  
-  short equippedWeaponID;
-  Item* inventory; //array
-};
-
-struct Monster : Actor
-{  
-  short hp;
-  short hitBonus;
-  short damage;
-};
-
 
 //Function Prototypes
 
 //screen display:
-void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
-// void printMap(char *map, short maxX, short maxY);
+// void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
+void printStatus(GameProperties &game);
 void printMap(MapSquare *map, short sizeX, short sizeY);
 void printControlScheme();
 bool cls(bool WIN32_MODE = false);
@@ -138,6 +134,7 @@ bool getAKey(char& input, bool WIN32_MODE = false);
 
 //file I/O:
 bool loadFromFile(string filename, GameProperties &game);
+bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
 
 //system checks:
 bool isRunningInAWin32Console();
@@ -148,14 +145,10 @@ bool resizeConsole_win32(short cols, short rows);
 int main(int argc, char** argv)
 {
   GameProperties game;
+  game.loadFolder = "gameMap1";
   
-  const string defaultGameDir = "gameMap1";
-  const string mapFile = defaultGameDir + "\\" + "gameMap.txt";
+  const string mapFile = game.loadFolder + "\\" + "gameMap.txt";
   
-  
-  // MapSquare *map; //will be initialized in loadFromFile // = new char[mapSizeMaxY * mapSizeMaxX];
-  
-  // if (!loadFromFile(mapFile, map, mapSizeMaxX, mapSizeMaxY))
   if (!loadFromFile(mapFile, game))
   {
     cout << "Reading game from disk has failed." << endl;
@@ -163,7 +156,6 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  short screenSizeMaxX = 100, screenSizeMaxY = 40;
   
   const short NUM_STATUS = 4;
   string statusDictionary[4];
@@ -186,13 +178,10 @@ int main(int argc, char** argv)
   }
   else
   {
-    if (!resizeConsole_win32(screenSizeMaxX, screenSizeMaxY)) //{cols, rows}
+    if (!resizeConsole_win32(game.screenSizeX, game.screenSizeY)) //{cols, rows}
       cout << "Resizing the console window failed. This program will not work right with a console buffer smaller than 100 characters wide by 40 tall. Please use the settings to resize this console window before continuing." << endl;
   }
   
-  short mapSizeMaxX = 80, mapSizeMaxY = 30;
-  short x, y;
-  short playerX = 20, playerY = 5;
   string statusLine1, statusLine2;
   
 
@@ -203,18 +192,13 @@ int main(int argc, char** argv)
       // map[y * mapSizeMaxX + x] = ' ';
     // }
     
-  MapSquare *playerPtr = &game.map[playerY * mapSizeMaxX + playerX];
-  playerPtr->display = 'Q';
+  // MapSquare *playerPtr = &game.map[playerY * mapSizeMaxX + playerX];
+  // playerPtr->display = 'Q';
   
-  game.map[11 * mapSizeMaxX + 20].display = 'W';
+  // game.map[11 * mapSizeMaxX + 20].display = 'W';
   
   short currStatusLine = STATUS_INIT;
-  
-  cls(WIN32_MODE);
-  printMap(game.map, mapSizeMaxX, mapSizeMaxY);
-  printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
-  printControlScheme();
-  
+    
   char input = 0;
   bool isGameRunning = true;
   bool confirmExit = false;
@@ -222,8 +206,8 @@ int main(int argc, char** argv)
   while (isGameRunning)
   {
     cls(WIN32_MODE);
-    printMap(game.map, mapSizeMaxX, mapSizeMaxY);
-    printStatus(statusDictionary[currStatusLine], statusDictionary[currStatusLine + 1]);
+    printMap(game.map, game.mapSizeX, game.mapSizeY);
+    printStatus(game);
     printControlScheme();
     
     if (getAKey(input, WIN32_MODE))
@@ -307,13 +291,12 @@ int main(int argc, char** argv)
 //********************************   Graphics   ********************************
 //******************************************************************************
 
-void printStatus(string line1, string line2, short hp, short mp, short qtyPotion)
+void printStatus(GameProperties &game)
 {
   cout << endl;
-  cout << line1 << endl;
-  cout << line2 << endl;
+  cout << *(game.currStatus) << endl;
   cout << endl;
-  cout << " [ HP: " << hp << " ]   [ MP: " << mp << " ]   [ Potions: " << qtyPotion << " ]" << endl;
+  cout << " [ HP: " << game.gameAssets[game.playerIndex].hp << " ]   [ Potions: " << game.gameAssets[game.playerIndex].qtyPotion << " ]   [ EXP: " << game.gameAssets[game.playerIndex].expTotal << " ]" << endl;
 }
 
 void printMap(MapSquare *map, short sizeX, short sizeY)
@@ -321,7 +304,7 @@ void printMap(MapSquare *map, short sizeX, short sizeY)
   short x, y;
   for (y = 0; y < sizeY; ++y)
   {
-    cout << setw(2) << y << " - ";
+    // cout << setw(2) << y << " - "; // DEBUG
     for (x = 0; x < sizeX; ++x)
     {
       // if (!(x % 10))
@@ -335,8 +318,8 @@ void printMap(MapSquare *map, short sizeX, short sizeY)
 void printControlScheme()
 {
   cout << endl;
-  cout << "Move:     (W)                (H)elp" << endl;
-  cout << "       (A)(S)(D)             E(x)it" << endl;
+  cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (V) Load" << endl;
+  cout << "       (A)(S)(D)   (H) Help                       (X) Exit" << endl;
   cout << "> ";
 }
 
@@ -344,10 +327,16 @@ void printControlScheme()
 
 
 
+//******************************************************************************
+//******************************   Save Game   *********************************
+//******************************************************************************
+
+
+
 
 
 //******************************************************************************
-//******************************   Setup Game   ********************************
+//******************************   Load Game   *********************************
 //******************************************************************************
 
 // bool loadFromFile(string filename, char *map, short maxX, short maxY)
@@ -414,58 +403,125 @@ bool loadFromFile(string filename, GameProperties &game)
       //parse line:
       linePos = 0;
       
-      game.gameAssets.push_back(Actor());
+      game.gameAssets.push_back(Asset());
       countActors++;
-      // game.gameAssets[countActors];
-      // Actor *newActor = new Actor;
-      Asset *newAsset = new Asset;
       
       //read char display
-      // (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
-      reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
-      cout << "DEBUG: display=" << reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display << endl;
+      game.gameAssets[countActors].display = line.at(linePos++);
+      // reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
+      // cout << "DEBUG: display=" << game.gameAssets[countActors].display << endl;
       ++linePos; //skip comma
       
-      //read x coordinate
+      // read x coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      (reinterpret_cast<Actor*>(newAsset))->x = atoi(currItem.c_str());
-      cout << "Data converted: newAsset->x=" << (reinterpret_cast<Actor*>(newAsset))->x << endl;
+      game.gameAssets[countActors].x = atoi(currItem.c_str());
+      // cout << "Data converted: newAsset->x=" << game.gameAssets[countActors].x << endl;
       currItem = "";
-      linePos++; //skip comma
+      ++linePos; //skip comma
       
-      //read y coordinate
+      // read y coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      (reinterpret_cast<Actor*>(newAsset))->y = atoi(currItem.c_str());
-      cout << "Data converted: newAsset->y=" << (reinterpret_cast<Actor*>(newAsset))->y << endl;
+      game.gameAssets[countActors].y = atoi(currItem.c_str());
+      // cout << "Data converted: newAsset->y=" << game.gameAssets[countActors].y << endl;
       currItem = "";
-      linePos++; //skip comma
+      ++linePos; //skip comma
       
-      //read assetID
+      // read assetID
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r')
-      {
         currItem += line.at(linePos++);
-        cout << "  char added to currItem=" << currItem << endl;
-      }
-      (reinterpret_cast<Actor*>(newAsset))->assetID = atoi(currItem.c_str());
-      cout << "Data converted: newAsset->assetID=" << (reinterpret_cast<Actor*>(newAsset))->assetID << endl;
+      game.gameAssets[countActors].assetID = atoi(currItem.c_str());
+      // cout << "Data converted: newAsset->assetID=" << game.gameAssets[countActors].assetID << endl;
       currItem = "";
       
-      // (*(game.map + y * game.mapSizeX + x)).linkedActor = &game.gameAssets[countActors];
+      //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it. **eye roll**
       
-      (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
+      (*(game.map + y * game.mapSizeX + x)).linkedActor = &game.gameAssets[countActors];
+      (*(game.map + y * game.mapSizeX + x)).display = game.gameAssets[countActors].display;
       
-      // cout << (*(game.map + y * game.mapSizeX + x)).linkedActor->display;
+      if (!loadAssetFile(game, game.gameAssets[countActors]))
+      {
+        cout << "Loading game asset (ID#" << game.gameAssets[countActors].assetID << ") failed. Cannot load save." << endl;
+        return false;
+      }
       
+      if (game.gameAssets[countActors].isPlayer)
+      {
+        // game.player = &game.gameAssets[countActors];
+        game.playerIndex = countActors;
+        cout << "DEBUG: This asset was player: " << game.gameAssets[countActors].name << endl;  
+      }
     }
     
-    //Future idea: add capability to put items at the end of this
+    //Future idea: Move x/y and display from mapFile to assetFiles. They really belong there...
+    
+    //Future idea: add capability to put Items at the end of the list of Actors
     
     mapFile.close();
     return true;
   }
 }
+
+
+bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
+{
+  ostringstream concatenator;
+  concatenator << game.loadFolder << "\\" << assetToLoad.assetID << ".txt";
+  string filename = concatenator.str();
+  ifstream assetFile;
+  assetFile.open(filename);
+  if (assetFile.fail())
+  {
+    // cout << "DEBUG: Asset file open fail (ID#" << assetToLoad.assetID << ")" << endl;
+    return false;
+  }
+  else
+  {
+    //didn't really want to use a string stream, but the alternative is either to_string() (which isn't found in <string> even with my complier set to C++11 mode...) or something messy like atoi(valueString.c_str()). ug.
+    stringstream reader;
+    string line, attribute;
+    while (getline(assetFile, line).good())
+    {
+      reader << line;
+      reader >> attribute;
+      if (attribute == "name")
+        reader >> assetToLoad.name;
+      else if (attribute == "isPlayer")
+        reader >> assetToLoad.isPlayer;
+      else if (attribute == "isActor")
+        reader >> assetToLoad.isActor;
+      else if (attribute == "hp")
+        reader >> assetToLoad.hp;
+      else if (attribute == "ac")
+        reader >> assetToLoad.ac;
+      else if (attribute == "hitBonus")
+        reader >> assetToLoad.hitBonus;
+      else if (attribute == "damage")
+        reader >> assetToLoad.damage;
+      else if (attribute == "damageBonus")
+        reader >> assetToLoad.damageBonus;
+      else if (attribute == "qtyPotion")
+        reader >> assetToLoad.qtyPotion;
+      else if (attribute == "expTotal")
+        reader >> assetToLoad.expTotal;
+    }
+    // cout << "name: " << assetToLoad.name << endl;
+    // cout << "isplayer: " << assetToLoad.isPlayer << endl;
+    // cout << "isActor: " << assetToLoad.isActor << endl;
+    // cout << "hp: " << assetToLoad.hp << endl;
+    // cout << "ac: " << assetToLoad.ac << endl;
+    // cout << "hitBonus: " << assetToLoad.hitBonus << endl;
+    // cout << "damage: " << assetToLoad.damage << endl;
+    // cout << "damageBonus: " << assetToLoad.damageBonus << endl;
+    // cout << "qtyPotion: " << assetToLoad.qtyPotion << endl;
+    // cout << "expTotal: " << assetToLoad.expTotal << endl;
+  }
+  assetFile.close();
+  return true;
+}
+
+
 
 
 //tests if there is a win32 console running this program right now

@@ -1,0 +1,9 @@
+name Orc
+isActor 1
+hp 30
+ac 15
+hitBonus 5
+damage 6
+damageBonus 2
+exp 50
+isPlayer 0
