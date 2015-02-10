@@ -420,11 +420,12 @@ bool loadFromFile(string filename, GameProperties &game)
       // Actor *newActor = new Actor;
       Asset *newAsset = new Asset;
       
+//******************Note: this works! But, it's surely a hack (using address-of to make it a pointer, and then reinterpret_cast into a pointer??? what.). And it horribly complex. I'm abandoning inheritance!
       //read char display
-      (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
-      cout << "DEBUG: display=" << (reinterpret_cast<Actor*>(newAsset))->display << endl;
+      // (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
+      reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
+      cout << "DEBUG: display=" << reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display << endl;
       ++linePos; //skip comma
-      
       //read x coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);

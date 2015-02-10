@@ -421,8 +421,9 @@ bool loadFromFile(string filename, GameProperties &game)
       Asset *newAsset = new Asset;
       
       //read char display
-      (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
-      cout << "DEBUG: display=" << (reinterpret_cast<Actor*>(newAsset))->display << endl;
+      // (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
+      reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
+      cout << "DEBUG: display=" << reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display << endl;
       ++linePos; //skip comma
       
       //read x coordinate
@@ -453,7 +454,7 @@ bool loadFromFile(string filename, GameProperties &game)
       
       // (*(game.map + y * game.mapSizeX + x)).linkedActor = &game.gameAssets[countActors];
       
-      // (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
+      (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
       
       // cout << (*(game.map + y * game.mapSizeX + x)).linkedActor->display;
       
