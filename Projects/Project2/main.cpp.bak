@@ -10,10 +10,10 @@
   /*
   implement this:
   
-  player is a STRUCT
-  monsters struct
+  DONE: player is a STRUCT
+  DONE: monsters struct
   
-  all NPC are in a (vector)
+  DONE: all NPC are in a (vector)
   player moves
   then iterate the vector for all NPC to take actions
   
@@ -26,6 +26,7 @@
   battle screen
   
   save game to file
+  save/load: Move x/y and display from mapFile to assetFiles. They really belong there...
   
   reach goals:
   scroll map??
@@ -59,6 +60,8 @@ using namespace std;
 //Global Constants
 //Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
 const int ANIMATION_RATE = 50; //in milliseconds
+const char SQ_EMPTY = ' ';
+const char SQ_WALL = '#';
 
 const int LINE_MAX = 80;
 const bool DEBUG_MODE = true;
@@ -107,16 +110,16 @@ struct GameProperties
   vector<Asset *> gameAssets;
   Asset *player;
   
-  string *currStatus;
+  short currStatus;
   vector<string> statusDictionary;
   
   string saveFolder;
   string loadFolder;
   
-  short screenSizeX;
-  short screenSizeY;
   short mapSizeX;
   short mapSizeY;
+  short screenSizeX;
+  short screenSizeY;
 };
 
 //Function Prototypes
@@ -129,6 +132,10 @@ void printControlScheme();
 bool cls(bool WIN32_MODE = false);
 bool win32_cls();
 void switchFromStreamToGet(istream &strm);
+
+//execute actions
+bool movePlayer(GameProperties &game, short x, short y);
+bool overwriteSquare(MapSquare *from, MapSquare *to);
 
 //user input:
 bool getAKey(char& input, bool WIN32_MODE = false);
@@ -157,15 +164,12 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  
-  const short NUM_STATUS = 4;
-  string statusDictionary[4];
-  const short STATUS_INIT = 0;
-  statusDictionary[STATUS_INIT] = "You wake up in a dank room. You hear water slowly dripping, and you feel slimy";
-  statusDictionary[STATUS_INIT + 1] = "mold on the floor.";
-  const short STATUS_EXIT = 2;
-  statusDictionary[STATUS_EXIT] = "Are you sure you want to exit?";
-  statusDictionary[STATUS_EXIT + 1] = "(y/n)";
+  short countStatus = 0;
+  game.statusDictionary.push_back("You wake up in a dank room. You hear water slowly dripping,\nand you feel slimy mold on the floor.");
+  short STATUS_INIT = countStatus++;
+  game.statusDictionary.push_back("Are you sure you want to exit?\n(y/n)");
+  short STATUS_EXIT = countStatus++;
+  game.currStatus = STATUS_INIT;
   
   //test for running in the proper console, and give a chance to quit if user wants
   bool WIN32_MODE = isRunningInAWin32Console();
@@ -198,7 +202,6 @@ int main(int argc, char** argv)
   
   // game.map[11 * mapSizeMaxX + 20].display = 'W';
   
-  short currStatusLine = STATUS_INIT;
     
   char input = 0;
   bool isGameRunning = true;
@@ -218,21 +221,29 @@ int main(int argc, char** argv)
       {
         case 'W':
           cout << "up" << endl;
+          if (movePlayer(game, game.player->x, game.player->y - 1))
+            cout << "Move successful!";
           break;
         case 'A':
           cout << "left" << endl;
+          if (movePlayer(game, game.player->x - 1, game.player->y))
+            cout << "Move successful!";
           break;
         case 'S':
           cout << "down" << endl;
+          if (movePlayer(game, game.player->x, game.player->y + 1))
+            cout << "Move successful!";
           break;
         case 'D':
           cout << "right" << endl;
+          if (movePlayer(game, game.player->x + 1, game.player->y))
+            cout << "Move successful!";
           break;
         case 'X':
           // cout << "Are you sure you want to exit? (y/n) ";
           confirmExit = true;
-          confirmExitPrevStatus = currStatusLine;
-          currStatusLine = STATUS_EXIT;
+          confirmExitPrevStatus = game.currStatus;
+          game.currStatus = STATUS_EXIT;
           break;
         case 'H':
           cout << "DEBUG: Display help here.";
@@ -249,7 +260,7 @@ int main(int argc, char** argv)
             else // input == 'N'
             {
               confirmExit = false;
-              currStatusLine = confirmExitPrevStatus;
+              game.currStatus = confirmExitPrevStatus;
             }
             break;
           }
@@ -266,26 +277,53 @@ int main(int argc, char** argv)
   
   delete [] game.map;
   return 0;
-  
-  
-  //****************************************************************************************************
-  //test animation using cls()
-  HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-  COORD coordScreen = { 0, 30 };
-  //test cls:
-  for (int i = 0; i < 77; ++i)
-  {
-    cls(WIN32_MODE);
-    SetConsoleCursorPosition(hStdout, coordScreen);
-    cout << string(i, ' ') << ">=-" << endl;
-    //wait for ANIMATION_RATE to establish proper frame rate
-    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-  }
- 
-  delete [] game.map;
-  return 0; 
 }
 
+
+
+//******************************************************************************
+//********************************   Do Game    ********************************
+//******************************************************************************
+
+bool movePlayer(GameProperties &game, short x, short y)
+{
+  cout << "DEBUG: Moving player to (" << x << "," << y << ")" << endl;
+  cout << "DEBUG: mapSize: (" << game.mapSizeX << "," << game.mapSizeY << ")" << endl;
+  if (x >= 0 && x < game.mapSizeX && y >= 0 && y < game.mapSizeY)
+  {
+    MapSquare *potentialMove = (game.map + y * game.mapSizeX + x);
+    if (potentialMove->display == SQ_EMPTY)
+    {
+      overwriteSquare((game.map + game.player->y * game.mapSizeX + game.player->x), potentialMove);
+      game.player->x = x;
+      game.player->y = y;
+    }
+    else if (potentialMove->display == SQ_WALL)
+    {
+      //no move
+    }
+    else
+    {
+      //not a wall and not an empty square
+      //what is it??
+      //fightMonster(asset monster, asset player)??
+    }
+  }
+  else
+  {
+    cout << "DEBUG: Tried to move player out-of-bounds." << endl;
+    return false;
+  }
+}
+
+//Dumb function! Overwrites what is in "to" and simply leaves "from" to set to SQ_EMPTY;
+bool overwriteSquare(MapSquare *from, MapSquare *to)
+{
+  to->display = from->display;
+  from->display = SQ_EMPTY;
+  to->linkedActor = from->linkedActor;
+  from->linkedActor = NULL; //nothing pointer
+}
 
 
 //******************************************************************************
@@ -295,7 +333,7 @@ int main(int argc, char** argv)
 void printStatus(GameProperties &game)
 {
   cout << endl;
-  cout << *(game.currStatus) << endl;
+  cout << game.statusDictionary[game.currStatus] << endl;
   cout << endl;
   cout << " [ HP: " << game.player->hp << " ]   [ Potions: " << game.player->qtyPotion << " ]   [ EXP: " << game.player->expTotal << " ]" << endl;
 }
@@ -448,14 +486,10 @@ bool loadFromFile(string filename, GameProperties &game)
       if (newAsset->isPlayer)
       {
         if (foundPlayer) //already found
-        {
           cout << "More than one player asset was found. This is surely an error. Only the first one will be on your side..." << endl;
-        }
         else
-        {
           game.player = newAsset;
-          foundPlayer = true;
-        }
+        foundPlayer = true;
       }
     }
     if (!foundPlayer)
@@ -653,7 +687,8 @@ bool getAKey(char& input, bool WIN32_MODE)
               cout << "Ctrl+C has been used to kill the process." << endl;
               ExitProcess(0); //from MSDN methods
             }
-            if (!keyEventRecord.bKeyDown) //if the keyboard key has not been released yet, ignore it
+            // if (!keyEventRecord.bKeyDown) //if the keyboard key has not been released yet, ignore it
+            if (!keyEventRecord.bKeyDown || !keyEventRecord.bKeyDown) //record all key events, up and down
             {
               isInputDone = true; //assume input is good. change it to false if input is actually bad
               
@@ -742,3 +777,19 @@ void switchFromStreamToGet(istream &strm)
     // cout << static_cast<int>(temp) << endl;
   } while (temp != '\n' && temp != '\0');
 }
+
+  //****************************************************************************************************
+  //test animation using cls()
+/*   HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+  COORD coordScreen = { 0, 30 };
+  //test cls:
+  for (int i = 0; i < 77; ++i)
+  {
+    cls(WIN32_MODE);
+    SetConsoleCursorPosition(hStdout, coordScreen);
+    cout << string(i, ' ') << ">=-" << endl;
+    //wait for ANIMATION_RATE to establish proper frame rate
+    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
+  } */
+  //****************************************************************************************************
+ 
