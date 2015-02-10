@@ -35,6 +35,7 @@
 #include <iomanip>
 #include <string>
 #include <fstream>
+#include <vector>
 
 // MSDN Method to Read Unbuffered Input from Keyboard
 //  reference:
@@ -61,6 +62,8 @@ const bool DEBUG_MODE = true;
 
 //Struct Prototypes
 
+//note: I need to force the complier to "see" the inheritance relationship of structs with reinterpret_cast. I don't know if this means I'm doing the whole thing wrong, but I don't want to delve into classes, so I'm sticking with it.
+//  example: (reinterpret_cast<Actor*>(newAsset))->display (newAsset is of type Asset*)
 struct Asset
 {
   short assetID;
@@ -76,7 +79,7 @@ struct Actor : Asset
 struct MapSquare
 {
   char display;
-  Actor* linkedActor;
+  Asset* linkedActor;
 };
 
 struct GameProperties
@@ -90,7 +93,8 @@ struct GameProperties
   
   string saveFolder;
   
-  Asset *gameAssets;
+  // Asset *gameAssets;
+  vector<Asset> gameAssets;
 };
 
 
@@ -392,14 +396,15 @@ bool loadFromFile(string filename, GameProperties &game)
       return false;
     }
     
-    link these assets we're about to find into GameProperties game and MapSquares
-    how to dynamically allocate game.gameAssets when we don't know how many assets there are?
+    // link these assets we're about to find into GameProperties game and MapSquares
+    // how to dynamically allocate game.gameAssets when we don't know how many assets there are?
     
     
     //read asset list at the bottom
     short linePos = 0;
     short data = 0;
     string currItem = "";
+    short countActors = -1;
     while (getline(mapFile, line).good())
     {
       //line is not full enough to be a full asset line. ignore it.
@@ -408,28 +413,33 @@ bool loadFromFile(string filename, GameProperties &game)
       
       //parse line:
       linePos = 0;
-      Actor *newActor = new Actor;
+      
+      game.gameAssets.push_back(Actor());
+      countActors++;
+      // game.gameAssets[countActors];
+      // Actor *newActor = new Actor;
+      Asset *newAsset = new Asset;
       
       //read char display
-      newActor->display = line.at(linePos++);
-      cout << "DEBUG: display=" << newActor->display << endl;
+      (reinterpret_cast<Actor*>(newAsset))->display = line.at(linePos++);
+      cout << "DEBUG: display=" << (reinterpret_cast<Actor*>(newAsset))->display << endl;
       ++linePos; //skip comma
       
       //read x coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      newActor->x = atoi(currItem.c_str());
-      cout << "Data converted: newActor->x=" << newActor->x << endl;
+      (reinterpret_cast<Actor*>(newAsset))->x = atoi(currItem.c_str());
+      cout << "Data converted: newAsset->x=" << (reinterpret_cast<Actor*>(newAsset))->x << endl;
       currItem = "";
-      ++linePos; //skip comma
+      linePos++; //skip comma
       
       //read y coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      newActor->y = atoi(currItem.c_str());
-      cout << "Data converted: newActor->y=" << newActor->y << endl;
+      (reinterpret_cast<Actor*>(newAsset))->y = atoi(currItem.c_str());
+      cout << "Data converted: newAsset->y=" << (reinterpret_cast<Actor*>(newAsset))->y << endl;
       currItem = "";
-      ++linePos; //skip comma
+      linePos++; //skip comma
       
       //read assetID
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r')
@@ -437,15 +447,19 @@ bool loadFromFile(string filename, GameProperties &game)
         currItem += line.at(linePos++);
         cout << "  char added to currItem=" << currItem << endl;
       }
-      newActor->assetID = atoi(currItem.c_str());
-      cout << "Data converted: newActor->assetID=" << newActor->assetID << endl;
+      (reinterpret_cast<Actor*>(newAsset))->assetID = atoi(currItem.c_str());
+      cout << "Data converted: newAsset->assetID=" << (reinterpret_cast<Actor*>(newAsset))->assetID << endl;
       currItem = "";
       
-      *((game.map) + y * game.mapSizeX + x).linkedActor = newActor;
-      game.gameAssets .next?? = newActor;
-
+      // (*(game.map + y * game.mapSizeX + x)).linkedActor = &game.gameAssets[countActors];
+      
+      (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
+      
+      // cout << (*(game.map + y * game.mapSizeX + x)).linkedActor->display;
       
     }
+    
+    //Future idea: add capability to put items at the end of this
     
     mapFile.close();
     return true;
