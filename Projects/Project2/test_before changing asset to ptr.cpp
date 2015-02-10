@@ -69,12 +69,12 @@ const bool DEBUG_MODE = true;
 //  example: (reinterpret_cast<Actor*>(newAsset))->display (newAsset is of type Asset*)
 struct Asset
 {
+  string name;
   short assetID;
   char display;
   short x;
   short y;
   
-  string name;
   bool isActor;
   short hp;
   short ac;
@@ -104,7 +104,7 @@ struct GameProperties
 {
   MapSquare *map;
   
-  vector<Asset *> gameAssets;
+  vector<Asset> gameAssets;
   Asset *player;
   
   string *currStatus;
@@ -353,6 +353,7 @@ bool loadFromFile(string filename, GameProperties &game)
   {
     mapFile >> game.screenSizeX >> game.screenSizeY >> game.mapSizeX >> game.mapSizeY;
     
+    
     //consume line break left in from >> operator:
     switchFromStreamToGet(mapFile);
     
@@ -385,12 +386,15 @@ bool loadFromFile(string filename, GameProperties &game)
       return false;
     }
     
+    // link these assets we're about to find into GameProperties game and MapSquares
+    // how to dynamically allocate game.gameAssets when we don't know how many assets there are?
     
-    // Read asset list
+    
+    //read asset list at the bottom
     short linePos = 0;
+    short data = 0;
     string currItem = "";
-    Asset *newAsset;
-    bool foundPlayer = false;
+    short countActors = -1;
     while (getline(mapFile, line).good())
     {
       //line is not full enough to be a full asset line. ignore it.
@@ -400,12 +404,11 @@ bool loadFromFile(string filename, GameProperties &game)
       //parse line:
       linePos = 0;
       
-      // newAsset = new Asset; // Note: The parens() are IMPORTANT! It initializes all members of the struct to default values (zero) when called as "new Asset()"!!
-      newAsset = new Asset();
-      game.gameAssets.push_back(newAsset);
+      game.gameAssets.push_back(Asset());
+      countActors++;
       
       //read char display
-      newAsset->display = line.at(linePos++);
+      game.gameAssets[countActors].display = line.at(linePos++);
       // reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
       // cout << "DEBUG: display=" << game.gameAssets[countActors].display << endl;
       ++linePos; //skip comma
@@ -413,7 +416,7 @@ bool loadFromFile(string filename, GameProperties &game)
       // read x coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      newAsset->x = atoi(currItem.c_str());
+      game.gameAssets[countActors].x = atoi(currItem.c_str());
       // cout << "Data converted: newAsset->x=" << game.gameAssets[countActors].x << endl;
       currItem = "";
       ++linePos; //skip comma
@@ -421,7 +424,7 @@ bool loadFromFile(string filename, GameProperties &game)
       // read y coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
-      newAsset->y = atoi(currItem.c_str());
+      game.gameAssets[countActors].y = atoi(currItem.c_str());
       // cout << "Data converted: newAsset->y=" << game.gameAssets[countActors].y << endl;
       currItem = "";
       ++linePos; //skip comma
@@ -429,38 +432,30 @@ bool loadFromFile(string filename, GameProperties &game)
       // read assetID
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r')
         currItem += line.at(linePos++);
-      newAsset->assetID = atoi(currItem.c_str());
+      game.gameAssets[countActors].assetID = atoi(currItem.c_str());
       // cout << "Data converted: newAsset->assetID=" << game.gameAssets[countActors].assetID << endl;
       currItem = "";
       
       //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it. **eye roll**
       
-      (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
-      (*(game.map + y * game.mapSizeX + x)).display = newAsset->display;
+      (*(game.map + y * game.mapSizeX + x)).linkedActor = &game.gameAssets[countActors];
+      (*(game.map + y * game.mapSizeX + x)).display = game.gameAssets[countActors].display;
       
-      if (!loadAssetFile(game, *newAsset))
+      if (!loadAssetFile(game, game.gameAssets[countActors]))
       {
-        cout << "Loading game asset (ID#" << newAsset->assetID << ") failed. Cannot load save." << endl;
-        mapFile.close();
+        cout << "Loading game asset (ID#" << game.gameAssets[countActors].assetID << ") failed. Cannot load save." << endl;
         return false;
       }
       
-      if (newAsset->isPlayer)
+      if (game.gameAssets[countActors].isPlayer)
       {
-        if (foundPlayer) //already found
-          cout << "More than one player asset was found. This is surely an error. Only the first one will be on your side..." << endl;
-        else
-          game.player = newAsset;
-        foundPlayer = true;
+        game.player = &game.gameAssets[countActors];
+        cout << "DEBUG: This asset was player: " << game.gameAssets[countActors].name << endl;  
+        cout << " [ HP: " << game.gameAssets[countActors].hp << " ]   [ Potions: " << game.gameAssets[countActors].qtyPotion << " ]   [ EXP: " << game.gameAssets[countActors].expTotal << " ]" << endl;
+        cout << " [ HP: " << game.player->hp << " ]   [ Potions: " << game.player->qtyPotion << " ]   [ EXP: " << game.player->expTotal << " ]" << endl;
       }
+      
     }
-    if (!foundPlayer)
-    {
-      cout << "A player asset was not loaded in this save file. The game cannot continue." << endl;
-      mapFile.close();
-      return false;
-    }
-    
     
     //Future idea: Move x/y and display from mapFile to assetFiles. They really belong there...
     
@@ -495,6 +490,8 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
       reader >> attribute;
       if (attribute == "name")
         reader >> assetToLoad.name;
+      else if (attribute == "isPlayer")
+        reader >> assetToLoad.isPlayer;
       else if (attribute == "isActor")
         reader >> assetToLoad.isActor;
       else if (attribute == "hp")
@@ -507,17 +504,13 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
         reader >> assetToLoad.damage;
       else if (attribute == "damageBonus")
         reader >> assetToLoad.damageBonus;
-      else if (attribute == "exp")
-        reader >> assetToLoad.exp;
-      else if (attribute == "isPlayer")
-        reader >> assetToLoad.isPlayer;
       else if (attribute == "qtyPotion")
         reader >> assetToLoad.qtyPotion;
       else if (attribute == "expTotal")
         reader >> assetToLoad.expTotal;
     }
     // cout << "name: " << assetToLoad.name << endl;
-    // cout << "isPlayer: " << assetToLoad.isPlayer << endl;
+    // cout << "isplayer: " << assetToLoad.isPlayer << endl;
     // cout << "isActor: " << assetToLoad.isActor << endl;
     // cout << "hp: " << assetToLoad.hp << endl;
     // cout << "ac: " << assetToLoad.ac << endl;
@@ -526,7 +519,6 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
     // cout << "damageBonus: " << assetToLoad.damageBonus << endl;
     // cout << "qtyPotion: " << assetToLoad.qtyPotion << endl;
     // cout << "expTotal: " << assetToLoad.expTotal << endl;
-    // cout << "exp: " << assetToLoad.exp << endl;
   }
   assetFile.close();
   return true;
