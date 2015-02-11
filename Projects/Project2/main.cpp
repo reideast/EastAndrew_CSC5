@@ -111,7 +111,7 @@ struct MapSquare
   Asset* linkedActor;
 };
 
-enum class GameState {Map, Help, Exit};
+enum class GameState {Map, Fight, Dead, SaveAs, Help, Exit};
 
 struct GameProperties
 {
@@ -141,6 +141,7 @@ struct GameProperties
 void printStatus(GameProperties &game);
 void printHelp();
 void printMap(MapSquare *map, short sizeX, short sizeY);
+void printFight(GameProperties &game, Asset* monster, Asset* player);
 void printControlScheme(GameState currState);
 bool cls(bool WIN32_MODE = false);
 bool cls_win32();
@@ -149,8 +150,9 @@ void clearStreamNewlines(istream &strm);
 //execute actions
 bool playerTurn(GameProperties &game, bool WIN32_MODE = false);
 bool monstersTurn(GameProperties &game);
-bool movePlayer(GameProperties &game, short x, short y);
+bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE = false);
 bool overwriteSquare(MapSquare *from, MapSquare *to);
+bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE = false);
 bool drinkPotion(Asset *player); //returns false if there wasn't a potion to drink
 
 //user input:
@@ -357,7 +359,7 @@ bool drinkPotion(Asset *player)
     return false;
 }
 
-bool movePlayer(GameProperties &game, short x, short y)
+bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
 {
   cout << "DEBUG: Moving player to (" << x << "," << y << ")" << endl;
   cout << "DEBUG: mapSize: (" << game.mapSizeX << "," << game.mapSizeY << ")" << endl;
@@ -379,7 +381,11 @@ bool movePlayer(GameProperties &game, short x, short y)
     {
       //not a wall and not an empty square
       //what is it??
-      //fightMonster(asset monster, asset player)??
+      if (potentialMove->linkedActor->isActor)
+      {
+        game.currState = GameState::Fight;
+        fightMonster(game, potentialMove->linkedActor, game->player, WIN32_MODE);
+      }
     }
   }
   else
@@ -398,7 +404,31 @@ bool overwriteSquare(MapSquare *from, MapSquare *to)
   from->linkedActor = NULL; //nothing pointer
 }
 
-
+bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE)
+{
+  while (monster->hp > 0 && player->hp > 0)
+  {
+    cls(WIN32_MODE);
+    printFight(game, monster, player);
+    printControlScheme(game.currState);
+    //get char
+    a
+    d
+    q
+    check for monster dead
+    monster atk
+    
+  }
+  
+  if (monster->hp <= 0)
+  {
+    
+  }
+  if (player->hp <= 0)
+  {
+    game.currState = GameState::Dead;
+  }
+}
 
 
 bool monstersTurn(GameProperties &game)
@@ -428,11 +458,7 @@ void printMap(MapSquare *map, short sizeX, short sizeY)
   {
     // cout << setw(2) << y << " - "; // DEBUG
     for (x = 0; x < sizeX; ++x)
-    {
-      // if (!(x % 10))
-        // cout << x;
       cout << map[y * sizeX + x].display;
-    }
     cout << endl;
   }
 }
@@ -443,6 +469,8 @@ void printControlScheme(GameState currState)
   if (currState == GameState::Map)
     cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (H) Help" << endl
          << "       (A)(S)(D)                              (V) Load (X) Exit" << endl;
+  else if (currState == GameState::Fight)
+    cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl << endl;
   // else if (currState == GameState::Exit)
     // cout << "                                              (C) Save (V) Load" << endl
          // << "                                                  (X) Exit" << endl;
@@ -626,8 +654,8 @@ bool loadFromFile(string filename, GameProperties &game)
       
       //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it. **eye roll**
       
-      (*(game.map + y * game.mapSizeX + x)).linkedActor = newAsset;
-      (*(game.map + y * game.mapSizeX + x)).display = newAsset->display;
+      (game.map + newAsset->y * game.mapSizeX + newAsset->x)->linkedActor = newAsset;
+      (game.map + newAsset->y * game.mapSizeX + newAsset->x)->display = newAsset->display;
       
       if (!loadAssetFile(game, *newAsset))
       {
@@ -710,6 +738,10 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
         reader >> assetToLoad.expTotal;
     }
     // cout << "name: " << assetToLoad.name << endl;
+    // cout << "display: " << assetToLoad.display << endl;
+    // cout << "x: " << assetToLoad.x << endl;
+    // cout << "y: " << assetToLoad.y << endl;
+    // cout << "assetID: " << assetToLoad.assetID << endl;
     // cout << "isPlayer: " << assetToLoad.isPlayer << endl;
     // cout << "isActor: " << assetToLoad.isActor << endl;
     // cout << "hp: " << assetToLoad.hp << endl;
