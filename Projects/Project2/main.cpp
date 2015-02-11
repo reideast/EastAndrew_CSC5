@@ -25,8 +25,16 @@
   
   battle screen
   
+  status dictionary from file
+  
   save game to file
   save/load: Move x/y and display from mapFile to assetFiles. They really belong there...
+  
+  search/sort:
+  game.assets[] -> sort, then binary search?
+  
+  remove DEBUG_MODE
+  chg SQ_EMPTY '#' and ' ' and to non-global
   
   reach goals:
   scroll map??
@@ -60,16 +68,15 @@ using namespace std;
 //Global Constants
 //Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
 const int ANIMATION_RATE = 50; //in milliseconds
+
 const char SQ_EMPTY = ' ';
 const char SQ_WALL = '#';
 
 const int LINE_MAX = 80;
+
 const bool DEBUG_MODE = true;
 
 //Struct Prototypes
-
-//note: I need to force the complier to "see" the inheritance relationship of structs with reinterpret_cast. I don't know if this means I'm doing the whole thing wrong, but I don't want to delve into classes, so I'm sticking with it.
-//  example: (reinterpret_cast<Actor*>(newAsset))->display (newAsset is of type Asset*)
 struct Asset
 {
   short assetID;
@@ -89,6 +96,7 @@ struct Asset
   bool isPlayer;
   // short mp;
   short qtyPotion;
+  short potionHeals;
   short expTotal;
   // short equippedWeaponID;
   // vector<Asset> inventory; //array
@@ -103,8 +111,12 @@ struct MapSquare
   Asset* linkedActor;
 };
 
+enum class GameState {Map, Help, Exit};
+
 struct GameProperties
 {
+  GameState gameState;
+  
   MapSquare *map;
   
   vector<Asset *> gameAssets;
@@ -127,15 +139,19 @@ struct GameProperties
 //screen display:
 // void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
 void printStatus(GameProperties &game);
+void printHelp();
 void printMap(MapSquare *map, short sizeX, short sizeY);
-void printControlScheme();
+void printControlScheme(GameState currState);
 bool cls(bool WIN32_MODE = false);
-bool win32_cls();
-void switchFromStreamToGet(istream &strm);
+bool cls_win32();
+void clearStreamNewlines(istream &strm);
 
 //execute actions
+bool playerTurn(GameProperties &game, bool WIN32_MODE = false);
+bool monstersTurn(GameProperties &game);
 bool movePlayer(GameProperties &game, short x, short y);
 bool overwriteSquare(MapSquare *from, MapSquare *to);
+bool drinkPotion(Asset *player); //returns false if there wasn't a potion to drink
 
 //user input:
 bool getAKey(char& input, bool WIN32_MODE = false);
@@ -143,6 +159,7 @@ bool getAKey(char& input, bool WIN32_MODE = false);
 //file I/O:
 bool loadFromFile(string filename, GameProperties &game);
 bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
+bool saveToFile(GameProperties &game);
 
 //system checks:
 bool isRunningInAWin32Console();
@@ -153,10 +170,11 @@ bool resizeConsole_win32(short cols, short rows);
 int main(int argc, char** argv)
 {
   GameProperties game;
-  game.loadFolder = "gameMap1";
+  game.loadFolder = "gameMap1"; //defautl game folder
   
   const string mapFile = game.loadFolder + "\\" + "gameMap.txt";
   
+  //get properties and assets from save files
   if (!loadFromFile(mapFile, game))
   {
     cout << "Reading game from disk has failed." << endl;
@@ -164,11 +182,15 @@ int main(int argc, char** argv)
     return 1;
   }
   
+  //set up game as it should start
+  game.gameState = GameState::Map;
+  
+  //note: move this into the struct Game
   short countStatus = 0;
   game.statusDictionary.push_back("You wake up in a dank room. You hear water slowly dripping,\nand you feel slimy mold on the floor.");
   short STATUS_INIT = countStatus++;
-  game.statusDictionary.push_back("Are you sure you want to exit?\n(y/n)");
-  short STATUS_EXIT = countStatus++;
+  // game.statusDictionary.push_back("Are you sure you want to exit?\n(y/n)");
+  // short STATUS_EXIT = countStatus++;
   game.currStatus = STATUS_INIT;
   
   //test for running in the proper console, and give a chance to quit if user wants
@@ -181,98 +203,78 @@ int main(int argc, char** argv)
     if (choice == 'n' || choice == 'N')
       return 1; //exits with Run Failed
   }
-  else
+  else //user is running a win32 console; resize it to size requested by gameMap.txt
   {
     if (!resizeConsole_win32(game.screenSizeX, game.screenSizeY)) //{cols, rows}
       cout << "Resizing the console window failed. This program will not work right with a console buffer smaller than 100 characters wide by 40 tall. Please use the settings to resize this console window before continuing." << endl;
   }
   
-  string statusLine1, statusLine2;
-  
-
-  
-  // for (y = 0; y < mapSizeMaxY; ++y)
-    // for (x = 0; x < mapSizeMaxX; ++x)
-    // {
-      // map[y * mapSizeMaxX + x] = ' ';
-    // }
-    
-  // MapSquare *playerPtr = &game.map[playerY * mapSizeMaxX + playerX];
-  // playerPtr->display = 'Q';
-  
-  // game.map[11 * mapSizeMaxX + 20].display = 'W';
-  
-    
+  //game running loop
+  //each iteration represents one "turn"
   char input = 0;
   bool isGameRunning = true;
-  bool confirmExit = false;
-  short confirmExitPrevStatus = 0;
   while (isGameRunning)
   {
     cls(WIN32_MODE);
-    printMap(game.map, game.mapSizeX, game.mapSizeY);
-    printStatus(game);
-    printControlScheme();
     
-    if (getAKey(input, WIN32_MODE))
+    if (game.gameState == GameState::Map)
     {
-      if (WIN32_MODE) cout << endl;
-      switch ((input >= 'a' && input <= 'z') ? (input - 'a' + 'A') : input) //to upper
+      printMap(game.map, game.mapSizeX, game.mapSizeY);
+      printStatus(game);
+      printControlScheme(game.gameState);
+      
+      if (playerTurn(game, WIN32_MODE)) //true if player made an actual move, so give the monsters a turn
+        monstersTurn(game);
+    }
+    else if (game.gameState == GameState::Help)
+    {
+      printHelp();
+      printControlScheme(game.gameState);
+      getAKey(input, WIN32_MODE); //get a key and trash it
+      game.gameState = GameState::Map;
+    }
+    else if (game.gameState == GameState::Exit)
+    {
+      cout << endl << "Would you like to quit the game?" << endl;
+      cout << "  (C) Save and quit" << endl;
+      cout << "  (Y) Yes, quit now" << endl;
+      cout << "  (N) Cancel" << endl;
+      cout << "> ";
+      // printControlScheme(game.gameState);
+      if (getAKey(input, WIN32_MODE))
       {
-        case 'W':
-          cout << "up" << endl;
-          if (movePlayer(game, game.player->x, game.player->y - 1))
-            cout << "Move successful!";
-          break;
-        case 'A':
-          cout << "left" << endl;
-          if (movePlayer(game, game.player->x - 1, game.player->y))
-            cout << "Move successful!";
-          break;
-        case 'S':
-          cout << "down" << endl;
-          if (movePlayer(game, game.player->x, game.player->y + 1))
-            cout << "Move successful!";
-          break;
-        case 'D':
-          cout << "right" << endl;
-          if (movePlayer(game, game.player->x + 1, game.player->y))
-            cout << "Move successful!";
-          break;
-        case 'X':
-          // cout << "Are you sure you want to exit? (y/n) ";
-          confirmExit = true;
-          confirmExitPrevStatus = game.currStatus;
-          game.currStatus = STATUS_EXIT;
-          break;
-        case 'H':
-          cout << "DEBUG: Display help here.";
-          break;
-        case 'Y':
-        case 'N':
-          if (confirmExit)
-          {
-            if (input == 'Y' || input == 'y')
+        switch (input)
+        {        
+          case 'C': case 'c':
+            cout << "Saving game now." << endl;
+            if (!saveToFile(game))
             {
-              cout << "Thank you for playing!" << endl;
-              isGameRunning = false;
+              cout << "The game save failed. Are you sure you want to exit without saving? (y/n) ";
+              if (getAKey(input, WIN32_MODE))
+              {
+                if (input == 'Y' || input == 'y')
+                  break;
+                else
+                  game.gameState = GameState::Map;
+              }
+              else
+                cout << "Key input failed." << endl;
             }
-            else // input == 'N'
-            {
-              confirmExit = false;
-              game.currStatus = confirmExitPrevStatus;
-            }
+          case 'Y': case 'y':
+            cout << "Thank you for playing!" << endl;
+            isGameRunning = false;
             break;
-          }
-        default:
-          cout << "Keyboard input doesn't do anything" << endl;
+          case 'N': case 'n':
+          default:
+            game.gameState = GameState::Map;
+        }
       }
+      else
+      {
+        cout << "Key input failed." << endl;
+      }
+      
     }
-    else
-    {
-      cout << "Key input failed." << endl;
-    }
-    
   }
   
   delete [] game.map;
@@ -284,6 +286,76 @@ int main(int argc, char** argv)
 //******************************************************************************
 //********************************   Do Game    ********************************
 //******************************************************************************
+
+bool playerTurn(GameProperties &game, bool WIN32_MODE)
+{
+  char input = 0;
+  if (getAKey(input, WIN32_MODE))
+  {
+    if (WIN32_MODE)
+      cout << endl;
+    switch ((input >= 'a' && input <= 'z') ? (input - 'a' + 'A') : input) //to upper
+    {
+      //movement
+      case 'W':
+        return movePlayer(game, game.player->x, game.player->y - 1); //returns false if move was invalid (like trying to go out of bounds) so this turn will not count
+      case 'A':
+        return movePlayer(game, game.player->x - 1, game.player->y);
+      case 'S':
+        return movePlayer(game, game.player->x, game.player->y + 1);
+          cout << "Move successful!";
+      case 'D':
+        return movePlayer(game, game.player->x + 1, game.player->y);
+        
+      //other game controls (quaff potion, inventory, etc)
+      case 'Q':
+        return drinkPotion(game.player); //true if potion was drunk and counts as a move, false if no potion
+        
+      //meta-game control (exit, help, save)
+      case 'X':
+        game.gameState = GameState::Exit;
+        return false;
+      case 'H':
+        game.gameState = GameState::Help;
+        return false;
+      case 'C':
+        if (!saveToFile(game))
+          cout << "Save failed!" << endl;
+        return false;
+      case 'V':
+        //*************************************implement game loading here!!
+        return false;
+      
+      //any other valid keyboard key was returned
+      default:
+        // cout << "Keyboard input doesn't do anything" << endl;
+        return false; //incorrect key, so don't give the monsters a turn
+    }
+  }
+  else
+  {
+    cout << "Key input failed." << endl;
+    return false;
+  }
+}
+
+//returns false if there wasn't a potion to drink
+bool drinkPotion(Asset *player)
+{
+  cout << "heals:"<<player->potionHeals<<endl;
+  if (player->isPlayer)
+    if (player->qtyPotion > 0)
+    {
+      player->hp += player->potionHeals;
+      --player->qtyPotion;
+    }
+    else
+    {
+      return false;
+    }
+  else
+    return false;
+}
 
 bool movePlayer(GameProperties &game, short x, short y)
 {
@@ -297,6 +369,7 @@ bool movePlayer(GameProperties &game, short x, short y)
       overwriteSquare((game.map + game.player->y * game.mapSizeX + game.player->x), potentialMove);
       game.player->x = x;
       game.player->y = y;
+      return true;
     }
     else if (potentialMove->display == SQ_WALL)
     {
@@ -316,7 +389,7 @@ bool movePlayer(GameProperties &game, short x, short y)
   }
 }
 
-//Dumb function! Overwrites what is in "to" and simply leaves "from" to set to SQ_EMPTY;
+//This is a dumb function. It does not test for existence first, and it simply overwrites what is in "to" and simply leaves "from" to set to SQ_EMPTY;
 bool overwriteSquare(MapSquare *from, MapSquare *to)
 {
   to->display = from->display;
@@ -324,6 +397,16 @@ bool overwriteSquare(MapSquare *from, MapSquare *to)
   to->linkedActor = from->linkedActor;
   from->linkedActor = NULL; //nothing pointer
 }
+
+
+
+
+bool monstersTurn(GameProperties &game)
+{
+  
+}
+
+
 
 
 //******************************************************************************
@@ -354,13 +437,72 @@ void printMap(MapSquare *map, short sizeX, short sizeY)
   }
 }
 
-void printControlScheme()
+void printControlScheme(GameState currState)
 {
   cout << endl;
-  cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (V) Load" << endl;
-  cout << "       (A)(S)(D)   (H) Help                       (X) Exit" << endl;
+  if (currState == GameState::Map)
+    cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (V) Load" << endl
+         << "       (A)(S)(D)   (H) Help                       (X) Exit" << endl;
+  // else if (currState == GameState::Exit)
+    // cout << "                                              (C) Save (V) Load" << endl
+         // << "                                                  (X) Exit" << endl;
+  else if (currState == GameState::Help)
+    cout << " (R) Return to previous screen" << endl << endl;
+  else
+    cout << endl << endl;
   cout << "> ";
 }
+
+void printHelp()
+{
+  cout << "How to play?!?" << endl;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -371,7 +513,18 @@ void printControlScheme()
 //******************************************************************************
 
 
-
+bool saveToFile(GameProperties &game)
+{
+  //to implement
+  //check if game.saveFolder is set yet
+  //else prompt for save file
+  
+  //return true if save is good
+  
+  //return false if save is bad
+  
+  return true;
+}
 
 
 //******************************************************************************
@@ -392,9 +545,9 @@ bool loadFromFile(string filename, GameProperties &game)
     mapFile >> game.screenSizeX >> game.screenSizeY >> game.mapSizeX >> game.mapSizeY;
     
     //consume line break left in from >> operator:
-    switchFromStreamToGet(mapFile);
+    clearStreamNewlines(mapFile);
     
-    game.map = new MapSquare[game.mapSizeX * game.mapSizeY];
+    game.map = new MapSquare[game.mapSizeX * game.mapSizeY]; //malloc??
 
     // while (mapFile.get(c) && y <= game.mapSizeY && x <= game.mapSizeX)
     // char* line;
@@ -551,6 +704,8 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
         reader >> assetToLoad.isPlayer;
       else if (attribute == "qtyPotion")
         reader >> assetToLoad.qtyPotion;
+      else if (attribute == "potionHeals")
+        reader >> assetToLoad.potionHeals;
       else if (attribute == "expTotal")
         reader >> assetToLoad.expTotal;
     }
@@ -563,13 +718,13 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
     // cout << "damage: " << assetToLoad.damage << endl;
     // cout << "damageBonus: " << assetToLoad.damageBonus << endl;
     // cout << "qtyPotion: " << assetToLoad.qtyPotion << endl;
+    // cout << "potionHeals: " << assetToLoad.potionHeals << endl;
     // cout << "expTotal: " << assetToLoad.expTotal << endl;
     // cout << "exp: " << assetToLoad.exp << endl;
   }
   assetFile.close();
   return true;
 }
-
 
 
 
@@ -607,7 +762,7 @@ bool resizeConsole_win32(short cols, short rows)
 
 
 //******************************************************************************
-//***************************   Input / Output   *******************************
+//********************************   Input   ***********************************
 //******************************************************************************
 
 //MSDN Method to read unbuffered console input
@@ -729,7 +884,7 @@ bool getAKey(char& input, bool WIN32_MODE)
 bool cls(bool WIN32_MODE)
 {
   if (WIN32_MODE)
-    win32_cls();
+    cls_win32();
   else //will create a lot of flicker! ew.
     for (int i = 0; i < 30; ++i)
       cout << endl;
@@ -737,7 +892,7 @@ bool cls(bool WIN32_MODE)
 
 //MSDN method of clearing the console by writing ' ' to every spot
 //Reference: https://msdn.microsoft.com/en-us/library/windows/desktop/ms682022(v=vs.85).aspx
-bool win32_cls()
+bool cls_win32()
 {
   HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
   COORD coordScreen = {0, 0}; // top, left corner of the console
@@ -767,7 +922,7 @@ bool win32_cls()
 }
 
 //function from Savitch 9th ed Ch 6 pg 347
-void switchFromStreamToGet(istream &strm)
+void clearStreamNewlines(istream &strm)
 {
   char temp;
   do

@@ -5,8 +5,16 @@ It must illustrate all the concepts we have covered, specifically the 7 construc
 
 added for project 2:
 
-1 and 2 dimensional arrays.  Passing the arrays between functions. Your functions need to illustrate pass by value, pass by reference, defaulted parameters, returning primitive data types. You need to make sure your output is formatted and you should read and write to files.  Sorting game players/searching should also be included.
+1 and 2 dimensional arrays
+Passing the arrays between functions
+pass by value
+pass by reference
+defaulted parameters
+returning primitive data types
 
+output is formatted
+read and write to files. 
+Sorting game players/searching
 
 
 

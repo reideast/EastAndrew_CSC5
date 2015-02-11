@@ -7,4 +7,5 @@ hitBonus 10
 damage 8
 damageBonus 2
 qtyPotion 3
+potionHeals 20
 expTotal 0
