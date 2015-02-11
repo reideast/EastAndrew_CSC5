@@ -441,8 +441,8 @@ void printControlScheme(GameState currState)
 {
   cout << endl;
   if (currState == GameState::Map)
-    cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (V) Load" << endl
-         << "       (A)(S)(D)   (H) Help                       (X) Exit" << endl;
+    cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (H) Help" << endl
+         << "       (A)(S)(D)                              (V) Load (X) Exit" << endl;
   // else if (currState == GameState::Exit)
     // cout << "                                              (C) Save (V) Load" << endl
          // << "                                                  (X) Exit" << endl;
