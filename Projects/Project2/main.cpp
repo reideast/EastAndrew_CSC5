@@ -406,22 +406,59 @@ bool overwriteSquare(MapSquare *from, MapSquare *to)
 
 bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE)
 {
+  bool playerMoveValid = false;
   while (monster->hp > 0 && player->hp > 0)
   {
-    cls(WIN32_MODE);
+    // cls(WIN32_MODE);
     printFight(game, monster, player);
     printControlScheme(game.currState);
-    //get char
+    
+    char input = 0;
+    if (getAKey(input, WIN32_MODE))
+    {
+      if (WIN32_MODE)
+        cout << endl;
+      switch ((input >= 'a' && input <= 'z') ? (input - 'a' + 'A') : input) //to upper
+      {
+        case 'A':
+        
+        
+        case 'D':
+
+         
+        case 'Q':
+          playerMoveValid = drinkPotion(game.player); //true if potion was drunk and counts as a move, false if no potion
+          
+          
+        default:
+          playerMoveValid = false; //incorrect key, so don't give the monsters a turn
+      }
+    }
+    else
+    {
+      cout << "Key input failed." << endl;
+      // return false;
+    }
     a
     d
     q
     check for monster dead
-    monster atk
+    if (playerMoveValid)
+      random 80% atk
+        monster atk
+      20% defend
     
+    
+    // playerMoveValid = false;
   }
   
   if (monster->hp <= 0)
   {
+    player->expTotal += monster->exp;
+    game.currState = GameState:Map;
+    map square display SQ_BLANK
+    map square linked asset -> null
+    delete linked asset?!?
     
   }
   if (player->hp <= 0)
@@ -470,7 +507,7 @@ void printControlScheme(GameState currState)
     cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (H) Help" << endl
          << "       (A)(S)(D)                              (V) Load (X) Exit" << endl;
   else if (currState == GameState::Fight)
-    cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl << endl;
+    cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl;
   // else if (currState == GameState::Exit)
     // cout << "                                              (C) Save (V) Load" << endl
          // << "                                                  (X) Exit" << endl;
@@ -486,7 +523,30 @@ void printHelp()
   cout << "How to play?!?" << endl;
 }
 
-
+void printFight(GameProperties &game, Asset* monster, Asset* player)
+{
+  struct Asset
+  
+  short assetID;
+  char display;
+  short x;
+  short y;
+  
+  string name;
+  bool isActor;
+  short hp;
+  short ac;
+  short hitBonus;
+  short damage;
+  short damageBonus;
+  short exp;
+  
+  bool isPlayer;
+  // short mp;
+  short qtyPotion;
+  short potionHeals;
+  short expTotal;
+}
 
 
 
