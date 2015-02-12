@@ -7,32 +7,6 @@
  */
 
 
-  /*
-  implement this:
-  
-  DONE: player is a STRUCT
-  DONE: monsters struct
-  
-  DONE: all NPC are in a (vector)
-  player moves
-  then iterate the vector for all NPC to take actions
-  
-  help screen
-  inventory screen
-  -> sorting requirement: sort the inventory items
-  
-  DONE: battle screen
-  
-  status dictionary from file
-  
-  DONE: save game to file
-  save/load: Move x/y and display from mapFile to assetFiles. They really belong there...
-  
-  search/sort:
-  game.assets[] -> sort, then binary search?
-  
-  DONE: remove DEBUG_MODE global
-  */
 
 
 //System Libraries
@@ -43,6 +17,7 @@
 #include <fstream>
 #include <vector>
 #include <cstdlib> //rand
+#include <chrono> //seed
 
 // MSDN Method to Read Unbuffered Input from Keyboard
 //  reference:
@@ -53,7 +28,6 @@
 #include <windows.h> //for Windows-only implementation of keyboard input and CLS
 // #include <stdio.h> //for printf and stderr only, i think. remove those, then disable.
 
-#include <chrono>
 using namespace std;
 
 //Global Constants
@@ -81,7 +55,7 @@ struct Asset
   short potionHeals;
   short expTotal;
   // short equippedWeaponID;
-  // vector<Asset> inventory; //array
+  // vector<Asset> inventory;
   
   // bool isItem;
   // char *art; //string (including \n) of ASCII art of item
@@ -119,7 +93,6 @@ struct GameProperties
 //Function Prototypes
 
 //screen display:
-// void printStatus(string line1, string line2, short hp = 100, short mp = 100, short qtyPotion = 3);
 void printStatus(GameProperties &game);
 void printHelp();
 void printMap(MapSquare *map, short sizeX, short sizeY);
@@ -143,10 +116,13 @@ short findAssetIndex(vector<Asset *> &assets, short assetID);
 bool getAKey(char& input, bool WIN32_MODE = false);
 
 //file I/O:
-bool loadFromFile(GameProperties &game);
-bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
 bool saveToFile(GameProperties &game);
 bool saveAssetFile(GameProperties &game, Asset &assetToSave);
+bool loadFromFile(GameProperties &game);
+bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
+void sortAssetsByIndex(vector<Asset *> &assets);
+void swapAssetPointers(vector<Asset *> &assets, short a, short b);
+void testPrintAssets(vector<Asset *> &assets);
 
 //system checks:
 bool isRunningInAWin32Console();
@@ -155,28 +131,10 @@ bool resizeConsole_win32(short cols, short rows);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 //Execution Begins Here
 int main(int argc, char** argv)
 {
   srand(chrono::system_clock::now().time_since_epoch().count());
-
-  // int rolls[7] = {};
-  // for (int i = 0; i < 100000; ++i)
-    // rolls[rollDie(6)]++;
-  // for (int i = 1; i <= 6; ++i)
-    // cout << rolls[i] << endl;;
   
   GameProperties game;
   game.dataFolder = "gameMap1"; //default game folder
@@ -195,11 +153,11 @@ int main(int argc, char** argv)
   short countStatus = 0;
   game.statusDictionary.push_back("You wake up in a dank room. You hear water slowly dripping,\nand you feel slimy mold on the floor.");
   short STATUS_INIT = countStatus++;
-  // game.statusDictionary.push_back("Are you sure you want to exit?\n(y/n)");
-  // short STATUS_EXIT = countStatus++;
-  game.currStatus = STATUS_INIT;
   game.statusDictionary.push_back("You have died. Hopefully the next adventurer will have more luck.");
   short STATUS_DEAD = countStatus++;
+  game.statusDictionary.push_back("You have been victorious in battle!\nYou press on through the dungeon in high spirits.");
+  short STATUS_VICTORY = countStatus++;
+  
   game.currStatus = STATUS_INIT;
   
   //test for running in the proper console, and give a chance to quit if user wants
@@ -215,7 +173,7 @@ int main(int argc, char** argv)
   else //user is running a win32 console; resize it to size requested by gameMap.txt
   {
     if (!resizeConsole_win32(game.screenSizeX, game.screenSizeY)) //{cols, rows}
-      cout << "Resizing the console window failed. This program will not work right with a console buffer smaller than 100 characters wide by 40 tall. Please use the settings to resize this console window before continuing." << endl;
+      cout << "Resizing the console window failed. This program will not work right with a console buffer smaller than " << game.screenSizeX << " characters wide by " << game.screenSizeY << " tall. Please use the settings to resize this console window before continuing." << endl;
   }
   
   //game running loop
@@ -233,7 +191,7 @@ int main(int argc, char** argv)
       printControlScheme(game.gameState);
       
       if (playerTurn(game, WIN32_MODE)) //true if player made an actual move, so give the monsters a turn
-        monstersTurn(game);
+        monstersTurn(game); //this doesn't do anything yet
     }
     else if (game.gameState == GameState::Help)
     {
@@ -416,6 +374,7 @@ int main(int argc, char** argv)
 
 
 
+
 //******************************************************************************
 //********************************   Do Game    ********************************
 //******************************************************************************
@@ -502,7 +461,8 @@ bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
     }
     else if (potentialMove->display == '#')
     {
-      //no move
+      //no move, but still return true so this counts as a move
+      return true;
     }
     else
     {
@@ -511,7 +471,7 @@ bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
       if (potentialMove->linkedActor->isActor)
       {
         game.gameState = GameState::Fight;
-        fightMonster(game, potentialMove->linkedActor, game.player, WIN32_MODE);
+        return fightMonster(game, potentialMove->linkedActor, game.player, WIN32_MODE);
       }
     }
   }
@@ -528,7 +488,7 @@ bool overwriteSquare(MapSquare *from, MapSquare *to)
   to->display = from->display;
   from->display = ' ';
   to->linkedActor = from->linkedActor;
-  from->linkedActor = NULL; //nothing pointer
+  from->linkedActor = nullptr; //nothing pointer
 }
 
 bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE)
@@ -544,10 +504,8 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
     playerActionValid = true;
     playerAtkRoll = 0, playerDmgRoll = 0, monsterAtkRoll = 0, monsterDmgRoll = 0, playerDefenseBonus = 0;
     
-    // cls(WIN32_MODE);
     printFight(game, monster, player);
     printControlScheme(game.gameState);
-    
     if (getAKey(input, WIN32_MODE))
     {
       cls(WIN32_MODE);
@@ -594,6 +552,7 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
       playerActionValid = false;
     }
     
+    //action the player selection was a valid turn, so give the monster a turn
     if (playerActionValid)
     {
       monsterDefenseBonus = 0;
@@ -644,12 +603,14 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
     //remove monster from map and game asset vector
     (game.map + monster->y * game.mapSizeX + monster->x)->display = ' ';
     (game.map + monster->y * game.mapSizeX + monster->x)->linkedActor = nullptr;
+    // testPrintAssets(game.gameAssets);
     short found = findAssetIndex(game.gameAssets, monster->assetID);
     // cout << "DEBUG: monster found in asset vector as pos=" << found << endl;
     if (found != -1)
-      game.gameAssets.erase(game.gameAssets.begin() + found);
+      game.gameAssets.erase(game.gameAssets.begin() + found); //don't need to re-sort, because we're popping out in-place
     else
       cout << "Error: Monster was not in the game's asset list." << endl;
+    // testPrintAssets(game.gameAssets);
     
     game.gameState = GameState::Map;
   }
@@ -679,11 +640,34 @@ short rollDie(short d)
 
 short findAssetIndex(vector<Asset *> &assets, short assetID)
 {
-  for (short i = 0; i < assets.size(); ++i)
-    if (assets[i]->assetID == assetID)
-      return i;
-    
+  //binary search (now that vector is sorted)
+  short min = 0;
+  short max = assets.size() - 1;
+  short center = (max / 2); //size()==10: 0...9 -> 5 / ==9: 0..8 -> 4
+  while (min <= max)
+  {
+    center = (max + min) / 2;
+    if (assets[center]->assetID == assetID)
+    {
+      return center;
+    }
+    else if (assetID > assets[center]->assetID)
+    {
+      min = center + 1;
+    }
+    else // if (assetID < assets[center]->assetID)
+    {
+      max = center - 1;
+    }
+  }
+  
   return -1;
+  
+  //linear search:
+  // for (short i = 0; i < assets.size(); ++i)
+    // if (assets[i]->assetID == assetID)
+      // return i;
+  // return -1;
 }
 
 bool monstersTurn(GameProperties &game)
@@ -730,9 +714,6 @@ void printControlScheme(GameState currState)
          << "       (A)(S)(D)                              (V) Load (X) Exit" << endl;
   else if (currState == GameState::Fight)
     cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl << endl;
-  // else if (currState == GameState::Exit)
-    // cout << "                                              (C) Save (V) Load" << endl
-         // << "                                                  (X) Exit" << endl;
   else if (currState == GameState::Help || currState == GameState::Dialog)
     cout << " (R) Return to previous screen" << endl << endl;
   else
@@ -775,51 +756,6 @@ void printFight(GameProperties &game, Asset* monster, Asset* player)
   cout << setw(15) << "AC" << setw(5) << player->ac << setw(15) << "AC" << setw(5) << monster->ac << endl;
   cout << setw(15) << "Potions" << setw(5) << player->qtyPotion << endl;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -871,7 +807,6 @@ bool saveToFile(GameProperties &game)
         }
       }
       
-      
       mapFile.close();
       return true;
     }
@@ -882,7 +817,6 @@ bool saveToFile(GameProperties &game)
     return false;
   }
 }
-
 
 bool saveAssetFile(GameProperties &game, Asset &assetToSave)
 {
@@ -948,12 +882,10 @@ bool loadFromFile(GameProperties &game)
     short x = 0, y = 0;
     while (y < mapSizeY && getline(mapFile, line).good())
     {
-      // cout << "DEBUG: y=" << y << ", line=\"" << line << "\"" << endl;
       x = 0;
       //parse line:
       while (x < line.length() && line.at(x) != '\n' && line.at(x) != '\r')
       {
-        // cout << "DEBUG: x=" << x << ",c=" << line.at(x) << endl;;
         newMap[y * mapSizeX + x].display = line.at(x++);
       }
       if (x != mapSizeX)
@@ -970,7 +902,6 @@ bool loadFromFile(GameProperties &game)
       mapFile.close();
       return false;
     }
-    
     
     // Read asset list
     short linePos = 0;
@@ -1015,7 +946,6 @@ bool loadFromFile(GameProperties &game)
         currItem += line.at(linePos++);
       newAsset->assetID = atoi(currItem.c_str());
       currItem = "";
-      
       //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it.
       
       (newMap + newAsset->y * mapSizeX + newAsset->x)->linkedActor = newAsset;
@@ -1044,14 +974,13 @@ bool loadFromFile(GameProperties &game)
       return false;
     }
     
-    
     //Future idea: Move x/y and display from mapFile to assetFiles. They really belong there...
     
     //Future idea: add capability to put Items at the end of the list of Actors
     
     mapFile.close();
     
-    //user has asked to load/save already, so delete GameProperties
+    //user has asked to load/save already, therefore this is NOT an initial load on game start, so delete previous GameProperties
     if (game.userRenamedSave) 
     {
       delete [] game.map;
@@ -1067,6 +996,10 @@ bool loadFromFile(GameProperties &game)
     game.player = playerPtr;
     for (int i = 0; i < newAssets.size(); ++i)
       game.gameAssets.push_back(newAssets[i]);
+    
+    // testPrintAssets(game.gameAssets);
+    sortAssetsByIndex(game.gameAssets);
+    // testPrintAssets(game.gameAssets);
     
     //start all loaded games from the main map screen
     game.gameState = GameState::Map;
@@ -1090,7 +1023,7 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
   }
   else
   {
-    //didn't really want to use a string stream, but the alternative is either to_string() (which isn't found in <string> even with my complier set to C++11 mode...) or something messy like atoi(valueString.c_str()). ug.
+    //didn't really want to use a string stream, but the alternative is either to_string() (which my complier isn't finding in <string> even with my complier set to C++11 mode...) or the big mess of atoi(valueString.c_str()). ug.
     stringstream reader;
     string line, attribute;
     while (getline(assetFile, line).good())
@@ -1122,6 +1055,7 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
       else if (attribute == "expTotal")
         reader >> assetToLoad.expTotal;
     }
+    //DEBUG:
     // cout << "name: " << assetToLoad.name << endl;
     // cout << "display: " << assetToLoad.display << endl;
     // cout << "x: " << assetToLoad.x << endl;
@@ -1143,7 +1077,35 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
   return true;
 }
 
+void testPrintAssets(vector<Asset *> &assets)
+{
+  for (short i = 0; i < assets.size(); ++i)
+    cout << "assets[" << i << "]=" << assets[i]->assetID << endl;
+}
 
+void sortAssetsByIndex(vector<Asset *> &assets)
+{
+  //implement a selection sort
+  short smallest = 0;
+  for (short i = 0; i < (assets.size() - 1); ++i)
+  {
+    smallest = i;
+    for (short j = i; j < assets.size(); ++j)
+    {
+      if (assets[j]->assetID < assets[smallest]->assetID)
+        smallest = j;
+    }
+    if (smallest != i) //actually found one that needs swapping
+      swapAssetPointers(assets, smallest, i);
+  }
+}
+
+void swapAssetPointers(vector<Asset *> &assets, short a, short b)
+{
+  Asset *temp = assets[a];
+  assets[a] = assets[b];
+  assets[b] = temp;
+}
 
 //tests if there is a win32 console running this program right now
 bool isRunningInAWin32Console()
@@ -1344,6 +1306,35 @@ void clearStreamNewlines(istream &strm)
   do
   {
     strm.get(temp);
-    // cout << static_cast<int>(temp) << endl;
   } while (temp != '\n' && temp != '\0');
 }
+
+
+
+  /*
+  implement this:
+  
+  DONE: player is a STRUCT
+  DONE: monsters struct
+  
+  DONE: all NPC are in a (vector)
+  DONE: player moves
+  
+  iterate the vector for all NPC to take actions
+  
+  DONE: help screen
+  
+  DONE: battle screen
+  
+  status dictionary from file
+  
+  DONE: save game to file
+  DONE: save/load
+  
+  Move x/y and display from mapFile to assetFiles. They really belong there...
+  
+  // game.assets[] -> sort, then binary search -> needed for an inventory that has items that are not on the Map
+  
+  DONE: remove DEBUG_MODE global
+  */
+  

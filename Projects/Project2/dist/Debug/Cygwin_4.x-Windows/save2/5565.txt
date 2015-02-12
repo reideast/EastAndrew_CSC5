@@ -7,3 +7,6 @@ damage 6
 damageBonus 2
 exp 30
 isPlayer 0
+qtyPotion 0
+potionHeals 0
+expTotal 0
