@@ -111,7 +111,7 @@ struct MapSquare
   Asset* linkedActor;
 };
 
-enum class GameState {Map, Fight, Dead, SaveAs, Help, Exit};
+enum class GameState {Map, Fight, Dead, Save, Load, Help, Dialog, Exit};
 
 struct GameProperties
 {
@@ -125,8 +125,8 @@ struct GameProperties
   short currStatus;
   vector<string> statusDictionary;
   
-  string saveFolder;
-  string loadFolder;
+  string dataFolder; //default to "gameMap1"
+  bool userRenamedSave;
   
   short mapSizeX;
   short mapSizeY;
@@ -161,7 +161,7 @@ short findAssetIndex(vector<Asset *> &assets, short assetID);
 bool getAKey(char& input, bool WIN32_MODE = false);
 
 //file I/O:
-bool loadFromFile(string filename, GameProperties &game);
+bool loadFromFile(GameProperties &game);
 bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
 bool saveToFile(GameProperties &game);
 
@@ -196,20 +196,17 @@ int main(int argc, char** argv)
     // cout << rolls[i] << endl;;
   
   GameProperties game;
-  game.loadFolder = "gameMap1"; //defautl game folder
-  
-  const string mapFile = game.loadFolder + "\\" + "gameMap.txt";
+  game.dataFolder = "gameMap1"; //default game folder
+  game.userRenamedSave = false; //user has not used SaveAs to rename the load/save dir
   
   //get properties and assets from save files
-  if (!loadFromFile(mapFile, game))
+  if (!loadFromFile(game))
   {
     cout << "Reading game from disk has failed." << endl;
     delete [] game.map;
     return 1;
   }
   
-  //set up game as it should start
-  game.gameState = GameState::Map;
   
   //note: move this into the struct Game
   short countStatus = 0;
@@ -269,11 +266,10 @@ int main(int argc, char** argv)
       cout << "  (Y) Yes, quit now" << endl;
       cout << "  (N) Cancel" << endl;
       cout << "> ";
-      // printControlScheme(game.gameState);
       if (getAKey(input, WIN32_MODE))
       {
         switch (input)
-        {        
+        {
           case 'C': case 'c':
             cout << "Saving game now." << endl;
             if (!saveToFile(game))
@@ -281,13 +277,20 @@ int main(int argc, char** argv)
               cout << "The game save failed. Are you sure you want to exit without saving? (y/n) ";
               if (getAKey(input, WIN32_MODE))
               {
-                if (input == 'Y' || input == 'y')
-                  break;
-                else
+                if (input != 'Y' && input != 'y')
+                {
                   game.gameState = GameState::Map;
+                  break;
+                }
+                else
+                  cout << "The game was not saved.";
               }
               else
                 cout << "Key input failed." << endl;
+            }
+            else
+            {
+              cout << "Saved to " << game.dataFolder << "." << endl;
             }
           case 'Y': case 'y':
             cout << "Thank you for playing!" << endl;
@@ -309,21 +312,120 @@ int main(int argc, char** argv)
       printMap(game.map, game.mapSizeX, game.mapSizeY);
       printStatus(game);
       
-      printControlScheme(GameState::Help);
+      printControlScheme(GameState::Dialog);
       getAKey(input, WIN32_MODE); //get a key and trash it
       
       cout << "Please try again!" << endl;
       isGameRunning = false;
     }
-    else if (game.gameState == GameState::SaveAs)
+    else if (game.gameState == GameState::Load)
     {
+      cout << "Are you sure you want to load a game?" << endl << "You will loose any unsaved progress. (y/n) " <<endl;
+      if (getAKey(input, WIN32_MODE))
+      {
+        if (input == 'Y' || input == 'y')
+        {
+          if (!game.userRenamedSave) //user has not provided a folder name yet
+          {
+            cout << "What is the folder name of your existing save game?" << endl;
+            cout << "If it doesn't exist, the load will fail." << endl;
+            cout << "> ";
+            cin >> game.dataFolder;
+            if (game.dataFolder.size() == 0)
+            {
+              cout << "The save folder cannot be blank." << endl;
+              printControlScheme(GameState::Dialog);
+              getAKey(input, WIN32_MODE); //get a key and trash it
+              game.gameState = GameState::Map;
+            }
+            else if (game.dataFolder == "gameMap1")
+            {
+              cout << "That is the default load directory." << endl;
+              printControlScheme(GameState::Dialog);
+              getAKey(input, WIN32_MODE); //get a key and trash it
+              game.gameState = GameState::Map;
+            }
+            else
+            {
+              game.userRenamedSave = true;
+            }
+          }
+          
+          if (game.userRenamedSave) //there is now a proper load name
+          {
+            if (!loadFromFile(game))
+            {
+              cout << "Load from folder named " << game.dataFolder << " failed!" << endl;
+              
+              cout << "Reading game from disk has failed." << endl;
+              delete [] game.map;
+              return 1;
+              game.userRenamedSave = false;
+            }
+            else
+              cout << "Loaded game from " << game.dataFolder << "." << endl;
+            printControlScheme(GameState::Dialog);
+            getAKey(input, WIN32_MODE); //get a key and trash it
+            game.gameState = GameState::Map;
+          }
+        }
+        else // 'N' no, do not save
+        {
+          game.gameState = GameState::Map;
+        }
+      }
+      else
+      {
+        cout << "Key input failed." << endl;
+      }
+    }
+    else if (game.gameState == GameState::Save)
+    {
+      if (!game.userRenamedSave) //user has not provided a folder name yet
+      {
+        cout << "What is the folder name of your save game?" << endl;
+        cout << "If it already exists, it will be overwritten." << endl;
+        cout << "> ";
+        cin >> game.dataFolder;
+        if (game.dataFolder.size() == 0)
+        {
+          cout << "The save folder cannot be blank." << endl;
+          printControlScheme(GameState::Dialog);
+          getAKey(input, WIN32_MODE); //get a key and trash it
+          game.gameState = GameState::Map;
+        }
+        else if (game.dataFolder == "gameMap1")
+        {
+          cout << "You cannot save to the default load directory." << endl;
+          printControlScheme(GameState::Dialog);
+          getAKey(input, WIN32_MODE); //get a key and trash it
+          game.gameState = GameState::Map;
+        }
+        else
+        {
+          game.userRenamedSave = true;
+        }
+      }
       
+      if (game.userRenamedSave) //there is now a proper save name
+      {
+        if (!saveToFile(game))
+        {
+          cout << "Save to folder named " << game.dataFolder << " failed!" << endl;
+          game.userRenamedSave = false;
+        }
+        else
+          cout << "Saved to " << game.dataFolder << "." << endl;
+        printControlScheme(GameState::Dialog);
+        getAKey(input, WIN32_MODE); //get a key and trash it
+        game.gameState = GameState::Map;
+      }
     }
     else
     {
       cout << "Error: The game is in an invalid state and cannot continue." << endl;
       isGameRunning = false;
-      printControlScheme(GameState::Help);
+      printControlScheme(GameState::Dialog);
       getAKey(input, WIN32_MODE); //get a key and trash it
     }
   }
@@ -370,11 +472,10 @@ bool playerTurn(GameProperties &game, bool WIN32_MODE)
         game.gameState = GameState::Help;
         return false;
       case 'C':
-        if (!saveToFile(game))
-          cout << "Save failed!" << endl;
+        game.gameState = GameState::Save;
         return false;
       case 'V':
-        //*************************************implement game loading here!!
+        game.gameState = GameState::Load;
         return false;
       
       //any other valid keyboard key was returned
@@ -401,12 +502,8 @@ bool drinkPotion(Asset *player)
       --player->qtyPotion;
       return true;
     }
-    else
-    {
-      return false;
-    }
-  else
-    return false;
+  
+  return false;
 }
 
 bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
@@ -558,11 +655,10 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
     cout << endl << endl << endl;
     printFight(game, monster, player);
     cout << endl;
-    cout << "You are victorious! You have killed the " << monster->name << "!" << endl;
-    cout << "You gain " << monster->exp << " experience points." << endl;
+    cout << "You are victorious! You have killed the " << monster->name << "! You gain " << monster->exp << " experience points." << endl;
     player->expTotal += monster->exp;
     
-    printControlScheme(GameState::Help);
+    printControlScheme(GameState::Dialog);
     getAKey(input, WIN32_MODE); //get a key and trash it
     
     //remove monster from map and game asset vector
@@ -586,7 +682,7 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
     //show deceased player as 'x' on the map
     (game.map + player->y * game.mapSizeX + player->x)->display = 'x';
     
-    printControlScheme(GameState::Help);
+    printControlScheme(GameState::Dialog);
     getAKey(input, WIN32_MODE); //get a key and trash it
 
     game.gameState = GameState::Dead;
@@ -653,11 +749,11 @@ void printControlScheme(GameState currState)
     cout << "Move:     (W)      (Q) Quaff Potion           (C) Save (H) Help" << endl
          << "       (A)(S)(D)                              (V) Load (X) Exit" << endl;
   else if (currState == GameState::Fight)
-    cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl;
+    cout << "     (A) Attack   (D) Defend   (Q) Quaff Potion" << endl << endl;
   // else if (currState == GameState::Exit)
     // cout << "                                              (C) Save (V) Load" << endl
          // << "                                                  (X) Exit" << endl;
-  else if (currState == GameState::Help)
+  else if (currState == GameState::Help || currState == GameState::Dialog)
     cout << " (R) Return to previous screen" << endl << endl;
   else
     cout << endl << endl;
@@ -682,6 +778,8 @@ void printHelp()
   cout << endl;
   cout << endl;
   cout << "Can you defeat the terrifying dragon at the end of the dungeon??" << endl;
+  cout << endl;
+  cout << endl;
   cout << endl;
 }
 
@@ -753,14 +851,12 @@ void printFight(GameProperties &game, Asset* monster, Asset* player)
 
 bool saveToFile(GameProperties &game)
 {
-  //to implement
-  //check if game.saveFolder is set yet
-  //else prompt for save file
   
   //return true if save is good
   
   //return false if save is bad
   
+  return false;
   return true;
 }
 
@@ -770,8 +866,18 @@ bool saveToFile(GameProperties &game)
 //******************************************************************************
 
 // bool loadFromFile(string filename, char *map, short maxX, short maxY)
-bool loadFromFile(string filename, GameProperties &game)
+bool loadFromFile(GameProperties &game)
 {
+  if (game.userRenamedSave) //user has asked to load/save already, so delete GameProperties
+  {
+    delete [] game.map;
+    
+  }
+  
+  ostringstream concatenator;
+  concatenator << game.dataFolder << "\\" << "gameMap.txt";
+  string filename = concatenator.str();
+ 
   ifstream mapFile;
   mapFile.open(filename);
   if (mapFile.fail())
@@ -869,7 +975,7 @@ bool loadFromFile(string filename, GameProperties &game)
       
       if (!loadAssetFile(game, *newAsset))
       {
-        cout << "Loading game asset (ID#" << newAsset->assetID << ") failed. Cannot load save." << endl;
+        cout << "Loading game asset (ID#" << newAsset->assetID << ") failed. Cannot load this save folder." << endl;
         mapFile.close();
         return false;
       }
@@ -885,7 +991,7 @@ bool loadFromFile(string filename, GameProperties &game)
     }
     if (!foundPlayer)
     {
-      cout << "A player asset was not loaded in this save file. The game cannot continue." << endl;
+      cout << "A player asset was not loaded from this save file. The game cannot continue." << endl;
       mapFile.close();
       return false;
     }
@@ -896,6 +1002,10 @@ bool loadFromFile(string filename, GameProperties &game)
     //Future idea: add capability to put Items at the end of the list of Actors
     
     mapFile.close();
+    
+    //set up game as it should start
+    game.gameState = GameState::Map;
+    
     return true;
   }
 }
@@ -904,7 +1014,7 @@ bool loadFromFile(string filename, GameProperties &game)
 bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
 {
   ostringstream concatenator;
-  concatenator << game.loadFolder << "\\" << assetToLoad.assetID << ".txt";
+  concatenator << game.dataFolder << "\\" << assetToLoad.assetID << ".txt";
   string filename = concatenator.str();
   ifstream assetFile;
   assetFile.open(filename);
