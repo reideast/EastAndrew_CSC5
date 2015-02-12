@@ -23,7 +23,7 @@
   
   note: (x) -> display msg -> NOT (y/n) -> clear exit state, does NOT clear msg
   
-  battle screen
+  DONE: battle screen
   
   status dictionary from file
   
@@ -33,7 +33,7 @@
   search/sort:
   game.assets[] -> sort, then binary search?
   
-  remove DEBUG_MODE
+  DONE: remove DEBUG_MODE global
   chg SQ_EMPTY '#' and ' ' and to non-global
   
   reach goals:
@@ -48,6 +48,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <cstdlib>
 
 // MSDN Method to Read Unbuffered Input from Keyboard
 //  reference:
@@ -74,7 +75,6 @@ const char SQ_WALL = '#';
 
 const int LINE_MAX = 80;
 
-const bool DEBUG_MODE = true;
 
 //Struct Prototypes
 struct Asset
@@ -153,7 +153,9 @@ bool monstersTurn(GameProperties &game);
 bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE = false);
 bool overwriteSquare(MapSquare *from, MapSquare *to);
 bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE = false);
+short rollDie(short d);
 bool drinkPotion(Asset *player); //returns false if there wasn't a potion to drink
+short findAssetIndex(vector<Asset *> &assets, short assetID);
 
 //user input:
 bool getAKey(char& input, bool WIN32_MODE = false);
@@ -168,9 +170,31 @@ bool isRunningInAWin32Console();
 bool resizeConsole_win32(short cols, short rows);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Execution Begins Here
 int main(int argc, char** argv)
 {
+  srand(chrono::system_clock::now().time_since_epoch().count());
+
+  // int rolls[7] = {};
+  // for (int i = 0; i < 100000; ++i)
+    // rolls[rollDie(6)]++;
+  // for (int i = 1; i <= 6; ++i)
+    // cout << rolls[i] << endl;;
+  
   GameProperties game;
   game.loadFolder = "gameMap1"; //defautl game folder
   
@@ -193,6 +217,9 @@ int main(int argc, char** argv)
   short STATUS_INIT = countStatus++;
   // game.statusDictionary.push_back("Are you sure you want to exit?\n(y/n)");
   // short STATUS_EXIT = countStatus++;
+  game.currStatus = STATUS_INIT;
+  game.statusDictionary.push_back("You have died. Hopefully the next adventurer will have more luck.");
+  short STATUS_DEAD = countStatus++;
   game.currStatus = STATUS_INIT;
   
   //test for running in the proper console, and give a chance to quit if user wants
@@ -275,7 +302,29 @@ int main(int argc, char** argv)
       {
         cout << "Key input failed." << endl;
       }
+    }
+    else if (game.gameState == GameState::Dead)
+    {
+      game.currStatus = STATUS_DEAD;
+      printMap(game.map, game.mapSizeX, game.mapSizeY);
+      printStatus(game);
       
+      printControlScheme(GameState::Help);
+      getAKey(input, WIN32_MODE); //get a key and trash it
+      
+      cout << "Please try again!" << endl;
+      isGameRunning = false;
+    }
+    else if (game.gameState == GameState::SaveAs)
+    {
+      
+    }
+    else
+    {
+      cout << "Error: The game is in an invalid state and cannot continue." << endl;
+      isGameRunning = false;
+      printControlScheme(GameState::Help);
+      getAKey(input, WIN32_MODE); //get a key and trash it
     }
   }
   
@@ -300,14 +349,14 @@ bool playerTurn(GameProperties &game, bool WIN32_MODE)
     {
       //movement
       case 'W':
-        return movePlayer(game, game.player->x, game.player->y - 1); //returns false if move was invalid (like trying to go out of bounds) so this turn will not count
+        return movePlayer(game, game.player->x, game.player->y - 1, WIN32_MODE); //returns false if move was invalid (like trying to go out of bounds) so this turn will not count
       case 'A':
-        return movePlayer(game, game.player->x - 1, game.player->y);
+        return movePlayer(game, game.player->x - 1, game.player->y, WIN32_MODE);
       case 'S':
-        return movePlayer(game, game.player->x, game.player->y + 1);
+        return movePlayer(game, game.player->x, game.player->y + 1, WIN32_MODE);
           cout << "Move successful!";
       case 'D':
-        return movePlayer(game, game.player->x + 1, game.player->y);
+        return movePlayer(game, game.player->x + 1, game.player->y, WIN32_MODE);
         
       //other game controls (quaff potion, inventory, etc)
       case 'Q':
@@ -344,12 +393,13 @@ bool playerTurn(GameProperties &game, bool WIN32_MODE)
 //returns false if there wasn't a potion to drink
 bool drinkPotion(Asset *player)
 {
-  cout << "heals:"<<player->potionHeals<<endl;
+  // cout << "DEBUG: heals:"<<player->potionHeals<<endl;
   if (player->isPlayer)
     if (player->qtyPotion > 0)
     {
       player->hp += player->potionHeals;
       --player->qtyPotion;
+      return true;
     }
     else
     {
@@ -361,8 +411,8 @@ bool drinkPotion(Asset *player)
 
 bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
 {
-  cout << "DEBUG: Moving player to (" << x << "," << y << ")" << endl;
-  cout << "DEBUG: mapSize: (" << game.mapSizeX << "," << game.mapSizeY << ")" << endl;
+  // cout << "DEBUG: Moving player to (" << x << "," << y << ")" << endl;
+  // cout << "DEBUG: mapSize: (" << game.mapSizeX << "," << game.mapSizeY << ")" << endl;
   if (x >= 0 && x < game.mapSizeX && y >= 0 && y < game.mapSizeY)
   {
     MapSquare *potentialMove = (game.map + y * game.mapSizeX + x);
@@ -383,14 +433,14 @@ bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
       //what is it??
       if (potentialMove->linkedActor->isActor)
       {
-        game.currState = GameState::Fight;
-        fightMonster(game, potentialMove->linkedActor, game->player, WIN32_MODE);
+        game.gameState = GameState::Fight;
+        fightMonster(game, potentialMove->linkedActor, game.player, WIN32_MODE);
       }
     }
   }
   else
   {
-    cout << "DEBUG: Tried to move player out-of-bounds." << endl;
+    // cout << "DEBUG: Tried to move player out-of-bounds." << endl;
     return false;
   }
 }
@@ -406,74 +456,170 @@ bool overwriteSquare(MapSquare *from, MapSquare *to)
 
 bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN32_MODE)
 {
-  bool playerMoveValid = false;
+  cls(WIN32_MODE);
+  cout << "You are attacking a " << monster->name << "!" << endl;
+  
+  bool playerActionValid = false;
+  short playerAtkRoll = 0, playerDmgRoll = 0, monsterAtkRoll = 0, monsterDmgRoll = 0, playerDefenseBonus = 0, monsterDefenseBonus = 0;
+  char input = 0;
   while (monster->hp > 0 && player->hp > 0)
   {
+    playerActionValid = true;
+    playerAtkRoll = 0, playerDmgRoll = 0, monsterAtkRoll = 0, monsterDmgRoll = 0, playerDefenseBonus = 0;
+    
     // cls(WIN32_MODE);
     printFight(game, monster, player);
-    printControlScheme(game.currState);
+    printControlScheme(game.gameState);
     
-    char input = 0;
     if (getAKey(input, WIN32_MODE))
     {
-      if (WIN32_MODE)
-        cout << endl;
+      cls(WIN32_MODE);
       switch ((input >= 'a' && input <= 'z') ? (input - 'a' + 'A') : input) //to upper
       {
         case 'A':
-        
+          playerAtkRoll = rollDie(20);
+          cout << "You attack the " << monster->name << "! ";
+          if (monsterDefenseBonus > 0) cout << "It is defending. ";
+          cout << "You roll a " << playerAtkRoll << " on a 20-sided die." << endl;
+          if ((playerAtkRoll + player->hitBonus) >= (monster->ac + monsterDefenseBonus))
+          {
+            playerDmgRoll = rollDie(player->damage);
+            cout << "You hit the " << monster->name << " with a total attack of " << (playerAtkRoll + player->hitBonus) << "!" << endl;
+            cout << "You deal " << (playerDmgRoll + player->damageBonus) << " damage!" << endl;
+            monster->hp -= (playerDmgRoll + player->damageBonus);
+          }
+          else
+          {
+            cout << "You miss the " << monster->name << " with your attack total of " << (playerAtkRoll + player->hitBonus) << "." << endl << endl;
+          }
+          break;
         
         case 'D':
-
+          playerDefenseBonus = 5;
+          cout << "You are defending! You get + " << playerDefenseBonus << " AC." << endl << endl << endl;
+          break;
          
         case 'Q':
-          playerMoveValid = drinkPotion(game.player); //true if potion was drunk and counts as a move, false if no potion
-          
+          if (playerActionValid = drinkPotion(player)) //true if potion was drunk and counts as a move, false if no potion
+            cout << "You drink a potion to heal " << player->potionHeals << " HP!" << endl << endl << endl;
+          else
+            cout << "You do not have a potion to drink." << endl << endl << endl;
+          break;
           
         default:
-          playerMoveValid = false; //incorrect key, so don't give the monsters a turn
+          cout << "That key does nothing." << endl << endl << endl;
+          playerActionValid = false; //incorrect key, so don't give the monsters a turn
       }
     }
     else
     {
-      cout << "Key input failed." << endl;
-      // return false;
+      cout << "Key input failed." << endl << endl << endl;
+      playerActionValid = false;
     }
-    a
-    d
-    q
-    check for monster dead
-    if (playerMoveValid)
-      random 80% atk
-        monster atk
-      20% defend
     
-    
-    // playerMoveValid = false;
+    if (playerActionValid)
+    {
+      monsterDefenseBonus = 0;
+      cout << endl;
+      if (monster->hp > 0)
+      {
+        //monster "AI" == 80% random chance to attack, 20% to defend
+        if (rollDie(10) < 9) //attack on a 1-8
+        {
+          monsterAtkRoll = rollDie(20);
+          cout << "The " << monster->name << " attacks you! It rolls a " << monsterAtkRoll << " on a 20-sided die." << endl;
+          if ((monsterAtkRoll + monster->hitBonus) >= (player->ac + playerDefenseBonus))
+          {
+            monsterDmgRoll = rollDie(monster->damage);
+            cout << "The monster hits with a total attack of " << (monsterAtkRoll + monster->hitBonus) << "." << endl;
+            cout << "It does " << (monsterDmgRoll + monster->damageBonus) << " damage to you!" << endl;
+            player->hp -= (monsterDmgRoll + monster->damageBonus);
+          }
+          else
+          {
+            cout << "The monster misses you!" << endl << endl;
+          }
+        }
+        else //defend on a 9-10
+        {
+          monsterDefenseBonus = 5;
+          cout << "The monster defends for +" << monsterDefenseBonus << " AC." << endl << endl << endl;
+        }
+      }
+    }
+    else
+    {
+      cout << endl << endl << endl << endl;
+    }
   }
   
   if (monster->hp <= 0)
   {
+    cout << endl << endl << endl;
+    printFight(game, monster, player);
+    cout << endl;
+    cout << "You are victorious! You have killed the " << monster->name << "!" << endl;
+    cout << "You gain " << monster->exp << " experience points." << endl;
     player->expTotal += monster->exp;
-    game.currState = GameState:Map;
-    map square display SQ_BLANK
-    map square linked asset -> null
-    delete linked asset?!?
     
+    printControlScheme(GameState::Help);
+    getAKey(input, WIN32_MODE); //get a key and trash it
+    
+    //remove monster from map and game asset vector
+    (game.map + monster->y * game.mapSizeX + monster->x)->display = SQ_EMPTY;
+    (game.map + monster->y * game.mapSizeX + monster->x)->linkedActor = nullptr;
+    short found = findAssetIndex(game.gameAssets, monster->assetID);
+    // cout << "DEBUG: monster found in asset vector as pos=" << found << endl;
+    if (found != -1)
+      game.gameAssets.erase(game.gameAssets.begin() + found);
+    else
+      cout << "Error: Monster was not in the game's asset list." << endl;
+    
+    game.gameState = GameState::Map;
   }
   if (player->hp <= 0)
   {
-    game.currState = GameState::Dead;
+    cout << endl << endl << endl;
+    printFight(game, monster, player);
+    cout << "You have been killed by the " << monster->name << "." << endl;
+
+    //show deceased player as 'x' on the map
+    (game.map + player->y * game.mapSizeX + player->x)->display = 'x';
+    
+    printControlScheme(GameState::Help);
+    getAKey(input, WIN32_MODE); //get a key and trash it
+
+    game.gameState = GameState::Dead;
   }
 }
 
+short rollDie(short d)
+{
+  if (d > 0)
+    return rand() % d + 1;
+  else
+    return -1;
+}
+
+short findAssetIndex(vector<Asset *> &assets, short assetID)
+{
+  for (short i = 0; i < assets.size(); ++i)
+    if (assets[i]->assetID == assetID)
+      return i;
+    
+  return -1;
+}
 
 bool monstersTurn(GameProperties &game)
 {
+  //implement monster AI here!
   
+  //move towards PC when PC is in radius monster->sightRange
+  //move away from PC if monster is timid (or PC is higher level?)
+  //wander around the dungeon sometimes
+  
+  //group with similar monsters?
 }
-
-
 
 
 //******************************************************************************
@@ -520,10 +666,37 @@ void printControlScheme(GameState currState)
 
 void printHelp()
 {
-  cout << "How to play?!?" << endl;
+  cout << "Welcome to the Adventures of \"Q\"!" << endl;
+  cout << endl;
+  cout << "You are an eager dungeon-delver named Q, and you must navigate a" << endl;
+  cout << "dungeon full of monsters to win the game." << endl;
+  cout << endl;
+  cout << "Use the WASD keys to navigate the dungeon map. When you run into a monster," << endl;
+  cout << "you will fight it! You can drink a potion to regain hit points with the Q key." << endl;
+  cout << endl;
+  cout << "In a battle, you can attack with your sword or defend with your shield." << endl;
+  cout << "Hit the monster to damage its hp before it depletes yours!" << endl;
+  cout << endl;
+  cout << "Use the C key to save your game to a folder name you type in. It will overwrite" << endl;
+  cout << "anything previously under that name. Use the V key to load back from a file." << endl;
+  cout << endl;
+  cout << endl;
+  cout << "Can you defeat the terrifying dragon at the end of the dungeon??" << endl;
+  cout << endl;
 }
 
-
+void printFight(GameProperties &game, Asset* monster, Asset* player)
+{
+  cout << endl;
+  cout << endl;
+  cout << setw(20) << "Player" << setw(20) << monster->name << endl;
+  cout << setw(20) << "--------------" << setw(20) << "--------------" << endl;
+  cout << setw(15) << "HP" << setw(5) << player->hp << setw(15) << "HP" << setw(5) << monster->hp << endl;
+  cout << setw(15) << "Attack" << setw(5) << player->hitBonus << setw(15) << "Attack" << setw(5) << monster->hitBonus << endl;
+  cout << setw(15) << "Damage 1d" << setw(2) << left << player->damage << "+" << right << setw(2) << player->damageBonus << setw(15) << "Damage 1d" << left << setw(2) << monster->damage << "+" << right << setw(2) << monster->damageBonus << endl;
+  cout << setw(15) << "AC" << setw(5) << player->ac << setw(15) << "AC" << setw(5) << monster->ac << endl;
+  cout << setw(15) << "Potions" << setw(5) << player->qtyPotion << endl;
+}
 
 
 
@@ -892,10 +1065,9 @@ bool getAKey(char& input, bool WIN32_MODE)
         SetConsoleMode(hStdin, fdwSaveOldMode); // Restore input mode on exit.
         return false; //ExitProcess(0);
       }
-      
-      if (DEBUG_MODE)
-        if (cNumRead > 1)
-          cout << "Warning: For this cycle, more than one (" << cNumRead << ") input event was read." << endl;
+    
+      // if (cNumRead > 1)
+        // cout << "Warning: For this cycle, more than one (" << cNumRead << ") input event was read." << endl;
 
       // Check all events in the buffer (should be only one)
       for (i = 0; i < cNumRead; i++)
