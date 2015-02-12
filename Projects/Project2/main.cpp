@@ -392,7 +392,6 @@ bool playerTurn(GameProperties &game, bool WIN32_MODE)
         return movePlayer(game, game.player->x - 1, game.player->y, WIN32_MODE);
       case 'S':
         return movePlayer(game, game.player->x, game.player->y + 1, WIN32_MODE);
-          cout << "Move successful!";
       case 'D':
         return movePlayer(game, game.player->x + 1, game.player->y, WIN32_MODE);
         

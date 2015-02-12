@@ -1,1 +1,0 @@
-mklink /j gameMap1 ..\..\..\gameMap1
