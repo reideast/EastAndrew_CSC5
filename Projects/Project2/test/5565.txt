@@ -1,0 +1,12 @@
+name Slime
+isActor 1
+hp 10
+ac 12
+hitBonus 2
+damage 6
+damageBonus 2
+exp 20
+isPlayer 0
+qtyPotion 0
+potionHeals 0
+expTotal 0

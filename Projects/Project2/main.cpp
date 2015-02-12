@@ -14,30 +14,25 @@
   DONE: monsters struct
   
   DONE: all NPC are in a (vector)
-  player moves
-  then iterate the vector for all NPC to take actions
+  DONE: player moves
   
-  help screen
-  inventory screen
-  -> sorting requirement: sort the inventory items
+  iterate the vector for all NPC to take actions
   
-  note: (x) -> display msg -> NOT (y/n) -> clear exit state, does NOT clear msg
+  DONE: help screen
   
   DONE: battle screen
   
   status dictionary from file
   
-  save game to file
-  save/load: Move x/y and display from mapFile to assetFiles. They really belong there...
+  DONE: save game to file
+  DONE: save/load
+  
+  Move x/y and display from mapFile to assetFiles. They really belong there...
   
   search/sort:
   game.assets[] -> sort, then binary search?
   
   DONE: remove DEBUG_MODE global
-  chg SQ_EMPTY '#' and ' ' and to non-global
-  
-  reach goals:
-  scroll map??
   */
 
 
@@ -48,7 +43,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
-#include <cstdlib>
+#include <cstdlib> //rand
 
 // MSDN Method to Read Unbuffered Input from Keyboard
 //  reference:
@@ -59,24 +54,12 @@
 #include <windows.h> //for Windows-only implementation of keyboard input and CLS
 // #include <stdio.h> //for printf and stderr only, i think. remove those, then disable.
 
-//<chrono> for simulation time keeping and <thread> for animation sleeping.
-//  referenced: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-//<chrono> needs C++11. To configure g++ in NetBeans, right click on Project. Set Configuration -> Customize. Build -> C++ Compiler. C++ Standard == C++11.
 #include <chrono>
-#include <thread>
 using namespace std;
 
 //Global Constants
-//Game animation parameters: Tweak these to make the game run differently if there is a lot of flicker on your machine
-const int ANIMATION_RATE = 50; //in milliseconds
 
-const char SQ_EMPTY = ' ';
-const char SQ_WALL = '#';
-
-const int LINE_MAX = 80;
-
-
-//Struct Prototypes
+//struct Prototypes
 struct Asset
 {
   short assetID;
@@ -164,6 +147,7 @@ bool getAKey(char& input, bool WIN32_MODE = false);
 bool loadFromFile(GameProperties &game);
 bool loadAssetFile(GameProperties &game, Asset &assetToLoad);
 bool saveToFile(GameProperties &game);
+bool saveAssetFile(GameProperties &game, Asset &assetToSave);
 
 //system checks:
 bool isRunningInAWin32Console();
@@ -290,7 +274,7 @@ int main(int argc, char** argv)
             }
             else
             {
-              cout << "Saved to " << game.dataFolder << "." << endl;
+              cout << "Save to " << game.dataFolder << " successful." << endl;
             }
           case 'Y': case 'y':
             cout << "Thank you for playing!" << endl;
@@ -320,7 +304,8 @@ int main(int argc, char** argv)
     }
     else if (game.gameState == GameState::Load)
     {
-      cout << "Are you sure you want to load a game?" << endl << "You will loose any unsaved progress. (y/n) " <<endl;
+      cout << "Are you sure you want to load a game?" << endl;
+      cout << "You will loose any unsaved progress! (y/n) ";
       if (getAKey(input, WIN32_MODE))
       {
         if (input == 'Y' || input == 'y')
@@ -380,7 +365,7 @@ int main(int argc, char** argv)
       if (!game.userRenamedSave) //user has not provided a folder name yet
       {
         cout << "What is the folder name of your save game?" << endl;
-        cout << "If it already exists, it will be overwritten." << endl;
+        cout << "(Due to limits of the program, you must create the folder BEFORE saving.)" << endl;
         cout << "> ";
         cin >> game.dataFolder;
         if (game.dataFolder.size() == 0)
@@ -509,14 +494,14 @@ bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
   if (x >= 0 && x < game.mapSizeX && y >= 0 && y < game.mapSizeY)
   {
     MapSquare *potentialMove = (game.map + y * game.mapSizeX + x);
-    if (potentialMove->display == SQ_EMPTY)
+    if (potentialMove->display == ' ')
     {
       overwriteSquare((game.map + game.player->y * game.mapSizeX + game.player->x), potentialMove);
       game.player->x = x;
       game.player->y = y;
       return true;
     }
-    else if (potentialMove->display == SQ_WALL)
+    else if (potentialMove->display == '#')
     {
       //no move
     }
@@ -538,11 +523,11 @@ bool movePlayer(GameProperties &game, short x, short y, bool WIN32_MODE)
   }
 }
 
-//This is a dumb function. It does not test for existence first, and it simply overwrites what is in "to" and simply leaves "from" to set to SQ_EMPTY;
+//This is a dumb function. It does not test for existence first, and it simply overwrites what is in "to" and simply leaves "from" to set to ' ';
 bool overwriteSquare(MapSquare *from, MapSquare *to)
 {
   to->display = from->display;
-  from->display = SQ_EMPTY;
+  from->display = ' ';
   to->linkedActor = from->linkedActor;
   from->linkedActor = NULL; //nothing pointer
 }
@@ -658,7 +643,7 @@ bool fightMonster(GameProperties &game, Asset* monster, Asset* player, bool WIN3
     getAKey(input, WIN32_MODE); //get a key and trash it
     
     //remove monster from map and game asset vector
-    (game.map + monster->y * game.mapSizeX + monster->x)->display = SQ_EMPTY;
+    (game.map + monster->y * game.mapSizeX + monster->x)->display = ' ';
     (game.map + monster->y * game.mapSizeX + monster->x)->linkedActor = nullptr;
     short found = findAssetIndex(game.gameAssets, monster->assetID);
     // cout << "DEBUG: monster found in asset vector as pos=" << found << endl;
@@ -847,12 +832,87 @@ void printFight(GameProperties &game, Asset* monster, Asset* player)
 
 bool saveToFile(GameProperties &game)
 {
-  
-  //return true if save is good
-  
-  //return false if save is bad
-  
-  return false;
+  if (game.userRenamedSave)
+  {
+    ostringstream concatenator;
+    concatenator << game.dataFolder << "\\" << "gameMap.txt";
+    string filename = concatenator.str();
+   
+    ofstream mapFile;
+    mapFile.open(filename);
+    if (mapFile.fail())
+    {
+      cout << "Error while opening " << filename << "." << endl;
+      return false;
+    }
+    else
+    {
+      mapFile << game.screenSizeX << ' ' << game.screenSizeY << "\r\n" << game.mapSizeX << ' ' << game.mapSizeY << "\r\n";
+            
+      short x = 0, y = 0;
+      for (short y = 0; y < game.mapSizeY; ++y)
+      {
+        for (short x = 0; x < game.mapSizeX; ++x)
+          mapFile << game.map[y * game.mapSizeX + x].display;
+        mapFile << "\r\n";
+      }
+      
+      // Write asset list
+      for (short i = 0; i < game.gameAssets.size(); ++i)
+      {
+        mapFile << game.gameAssets[i]->display << ','
+                << game.gameAssets[i]->x << ','
+                << game.gameAssets[i]->y << ','
+                << game.gameAssets[i]->assetID << "\r\n";
+        if (!saveAssetFile(game, *game.gameAssets[i]))
+        {
+          cout << "Saving game asset (ID#" << game.gameAssets[i]->assetID << ") failed. Cannot save to this folder." << endl;
+          mapFile.close();
+          return false;
+        }
+      }
+      
+      
+      mapFile.close();
+      return true;
+    }
+  }
+  else
+  {
+    cout << "Save file has not been renamed. Cannot save to default load folder!" << endl;
+    return false;
+  }
+}
+
+
+bool saveAssetFile(GameProperties &game, Asset &assetToSave)
+{
+  ostringstream concatenator;
+  concatenator << game.dataFolder << "\\" << assetToSave.assetID << ".txt";
+  string filename = concatenator.str();
+  ofstream assetFile;
+  assetFile.open(filename);
+  if (assetFile.fail())
+  {
+    cout << "Error: Asset file open fail (ID#" << assetToSave.assetID << ")" << endl;
+    return false;
+  }
+  else
+  {
+      assetFile << "name" << ' ' << assetToSave.name << "\r\n";
+      assetFile << "isActor" << ' ' << assetToSave.isActor << "\r\n";
+      assetFile << "hp" << ' ' << assetToSave.hp << "\r\n";
+      assetFile << "ac" << ' ' << assetToSave.ac << "\r\n";
+      assetFile << "hitBonus" << ' ' << assetToSave.hitBonus << "\r\n";
+      assetFile << "damage" << ' ' << assetToSave.damage << "\r\n";
+      assetFile << "damageBonus" << ' ' << assetToSave.damageBonus << "\r\n";
+      assetFile << "exp" << ' ' << assetToSave.exp << "\r\n";
+      assetFile << "isPlayer" << ' ' << assetToSave.isPlayer << "\r\n";
+      assetFile << "qtyPotion" << ' ' << assetToSave.qtyPotion << "\r\n";
+      assetFile << "potionHeals" << ' ' << assetToSave.potionHeals << "\r\n";
+      assetFile << "expTotal" << ' ' << assetToSave.expTotal << "\r\n";
+  }
+  assetFile.close();
   return true;
 }
 
@@ -864,12 +924,6 @@ bool saveToFile(GameProperties &game)
 // bool loadFromFile(string filename, char *map, short maxX, short maxY)
 bool loadFromFile(GameProperties &game)
 {
-  if (game.userRenamedSave) //user has asked to load/save already, so delete GameProperties
-  {
-    delete [] game.map;
-    
-  }
-  
   ostringstream concatenator;
   concatenator << game.dataFolder << "\\" << "gameMap.txt";
   string filename = concatenator.str();
@@ -878,22 +932,22 @@ bool loadFromFile(GameProperties &game)
   mapFile.open(filename);
   if (mapFile.fail())
   {
+    cout << "Error while opening " << filename << "." << endl;
     return false;
   }
   else
   {
-    mapFile >> game.screenSizeX >> game.screenSizeY >> game.mapSizeX >> game.mapSizeY;
+    short screenSizeX, screenSizeY, mapSizeX, mapSizeY;
+    mapFile >> screenSizeX >> screenSizeY >> mapSizeX >> mapSizeY;
     
     //consume line break left in from >> operator:
     clearStreamNewlines(mapFile);
     
-    game.map = new MapSquare[game.mapSizeX * game.mapSizeY]; //malloc??
+    MapSquare *newMap = new MapSquare[mapSizeX * mapSizeY]; //malloc??
 
-    // while (mapFile.get(c) && y <= game.mapSizeY && x <= game.mapSizeX)
-    // char* line;
     string line;
     short x = 0, y = 0;
-    while (y < game.mapSizeY && getline(mapFile, line).good())
+    while (y < mapSizeY && getline(mapFile, line).good())
     {
       // cout << "DEBUG: y=" << y << ", line=\"" << line << "\"" << endl;
       x = 0;
@@ -901,18 +955,20 @@ bool loadFromFile(GameProperties &game)
       while (x < line.length() && line.at(x) != '\n' && line.at(x) != '\r')
       {
         // cout << "DEBUG: x=" << x << ",c=" << line.at(x) << endl;;
-        game.map[y * game.mapSizeX + x].display = line.at(x++);
+        newMap[y * mapSizeX + x].display = line.at(x++);
       }
-      if (x != game.mapSizeX)
+      if (x != mapSizeX)
       {
-        cout << "Improperly formatted Map file (" << filename << "). Line num " << (y + 1) << " is " << x << " wide, not the proper length of " << game.mapSizeX << "." << endl;
+        cout << "Improperly formatted Map file (" << filename << "). Line num " << (y + 1) << " is " << x << " wide, not the proper length of " << mapSizeX << "." << endl;
+        mapFile.close();
         return false;
       }
       ++y;
     }
-    if (y != game.mapSizeY && x != game.mapSizeX)
+    if (y != mapSizeY && x != mapSizeX)
     {
-      cout << "Map file (" << filename << ") was not " << game.mapSizeX << " wide by " << game.mapSizeY << " tall. It was " << x << " by " << y << "." << endl;
+      cout << "Map file (" << filename << ") was not " << mapSizeX << " wide by " << mapSizeY << " tall. It was " << x << " by " << y << "." << endl;
+      mapFile.close();
       return false;
     }
     
@@ -920,6 +976,8 @@ bool loadFromFile(GameProperties &game)
     // Read asset list
     short linePos = 0;
     string currItem = "";
+    Asset *playerPtr;
+    vector<Asset *> newAssets;
     Asset *newAsset;
     bool foundPlayer = false;
     while (getline(mapFile, line).good())
@@ -933,19 +991,16 @@ bool loadFromFile(GameProperties &game)
       
       // newAsset = new Asset; // Note: The parens() are IMPORTANT! It initializes all members of the struct to default values (zero) when called as "new Asset()"!!
       newAsset = new Asset();
-      game.gameAssets.push_back(newAsset);
+      newAssets.push_back(newAsset);
       
       //read char display
       newAsset->display = line.at(linePos++);
-      // reinterpret_cast<Actor*>(&game.gameAssets[countActors])->display = line.at(linePos++);
-      // cout << "DEBUG: display=" << game.gameAssets[countActors].display << endl;
       ++linePos; //skip comma
       
       // read x coordinate
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
       newAsset->x = atoi(currItem.c_str());
-      // cout << "Data converted: newAsset->x=" << game.gameAssets[countActors].x << endl;
       currItem = "";
       ++linePos; //skip comma
       
@@ -953,7 +1008,6 @@ bool loadFromFile(GameProperties &game)
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r' && line.at(linePos) != ',')
         currItem += line.at(linePos++);
       newAsset->y = atoi(currItem.c_str());
-      // cout << "Data converted: newAsset->y=" << game.gameAssets[countActors].y << endl;
       currItem = "";
       ++linePos; //skip comma
       
@@ -961,13 +1015,12 @@ bool loadFromFile(GameProperties &game)
       while (linePos < line.length() && line.at(linePos) != '\n' && line.at(linePos) != '\r')
         currItem += line.at(linePos++);
       newAsset->assetID = atoi(currItem.c_str());
-      // cout << "Data converted: newAsset->assetID=" << game.gameAssets[countActors].assetID << endl;
       currItem = "";
       
-      //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it. **eye roll**
+      //P.S. I just gave in and used <sstream> in the function I wrote second, loadAssetFile(). I only left this mess here because I worked hard on it, and I'm therefore attached to it.
       
-      (game.map + newAsset->y * game.mapSizeX + newAsset->x)->linkedActor = newAsset;
-      (game.map + newAsset->y * game.mapSizeX + newAsset->x)->display = newAsset->display;
+      (newMap + newAsset->y * mapSizeX + newAsset->x)->linkedActor = newAsset;
+      (newMap + newAsset->y * mapSizeX + newAsset->x)->display = newAsset->display;
       
       if (!loadAssetFile(game, *newAsset))
       {
@@ -981,13 +1034,13 @@ bool loadFromFile(GameProperties &game)
         if (foundPlayer) //already found
           cout << "More than one player asset was found. This is surely an error. Only the first one will be on your side..." << endl;
         else
-          game.player = newAsset;
+          playerPtr = newAsset;
         foundPlayer = true;
       }
     }
     if (!foundPlayer)
     {
-      cout << "A player asset was not loaded from this save file. The game cannot continue." << endl;
+      cout << "A player asset was not loaded from this save file. This game file cannot be loaded." << endl;
       mapFile.close();
       return false;
     }
@@ -999,7 +1052,24 @@ bool loadFromFile(GameProperties &game)
     
     mapFile.close();
     
+    //user has asked to load/save already, so delete GameProperties
+    if (game.userRenamedSave) 
+    {
+      delete [] game.map;
+      game.gameAssets.clear();
+    }
+    
     //set up game as it should start
+    game.screenSizeX = screenSizeX;
+    game.screenSizeY = screenSizeY;
+    game.mapSizeX = mapSizeX;
+    game.mapSizeY = mapSizeY;
+    game.map = newMap;
+    game.player = playerPtr;
+    for (int i = 0; i < newAssets.size(); ++i)
+      game.gameAssets.push_back(newAssets[i]);
+    
+    //start all loaded games from the main map screen
     game.gameState = GameState::Map;
     
     return true;
@@ -1016,7 +1086,7 @@ bool loadAssetFile(GameProperties &game, Asset &assetToLoad)
   assetFile.open(filename);
   if (assetFile.fail())
   {
-    // cout << "DEBUG: Asset file open fail (ID#" << assetToLoad.assetID << ")" << endl;
+    cout << "Error: Asset file open fail (ID#" << assetToLoad.assetID << ")" << endl;
     return false;
   }
   else
@@ -1278,19 +1348,3 @@ void clearStreamNewlines(istream &strm)
     // cout << static_cast<int>(temp) << endl;
   } while (temp != '\n' && temp != '\0');
 }
-
-  //****************************************************************************************************
-  //test animation using cls()
-/*   HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-  COORD coordScreen = { 0, 30 };
-  //test cls:
-  for (int i = 0; i < 77; ++i)
-  {
-    cls(WIN32_MODE);
-    SetConsoleCursorPosition(hStdout, coordScreen);
-    cout << string(i, ' ') << ">=-" << endl;
-    //wait for ANIMATION_RATE to establish proper frame rate
-    this_thread::sleep_for(chrono::milliseconds(ANIMATION_RATE)); //reference: http://stackoverflow.com/questions/4184468/sleep-for-milliseconds
-  } */
-  //****************************************************************************************************
- 
